@@ -138,10 +138,10 @@ CREATE TABLE IF NOT EXISTS detalle_compra (
 -- ---------------------------------------------------------------------
 
 -- Administrador por defecto (password: Admin123! -- cambiar en produccion)
--- Hash BCrypt generado para "Admin123!"
+-- Hash BCrypt generado con PasswordUtil.hashear("Admin123!")
 INSERT INTO usuario (nombre, apellido, correo, password, rol, activo)
 VALUES ('Scarlett', 'Torres', 'admin@cafedonbosco.com',
-        '$2a$12$Vz0Pz6c3z3s2p2wYQb1oXOQpU3Yy2m9m0P8G0N0uQb7v0k0e7yjfy',
+        '$2a$12$B4q7wzKyFepDwVIgCCjfCesC3unEGtvFQIN3HwrlliAe4e88f6lGq',
         'ADMINISTRADOR', TRUE)
 ON DUPLICATE KEY UPDATE correo = correo;
 
@@ -151,3 +151,25 @@ INSERT INTO categoria (nombre, descripcion, activo) VALUES
     ('Postres', 'Reposteria y dulces', TRUE),
     ('Comida', 'Sandwiches y snacks', TRUE)
 ON DUPLICATE KEY UPDATE nombre = nombre;
+
+-- Productos de ejemplo para poder probar el catalogo sin cargar datos a mano
+INSERT INTO producto (categoria_id, nombre, descripcion, precio, imagen, tiempo_preparacion, activo)
+SELECT id, 'Cafe Latte', 'Cafe espresso con leche vaporizada.', 2.50, NULL, '2 - 3 minutos', TRUE
+FROM categoria WHERE nombre = 'Cafe'
+UNION ALL
+SELECT id, 'Cafe Americano', 'Cafe puro, de sabor intenso.', 2.00, NULL, '1 - 2 minutos', TRUE
+FROM categoria WHERE nombre = 'Cafe'
+UNION ALL
+SELECT id, 'Frappe de vainilla', 'Refrescante y cremoso.', 3.00, NULL, '3 - 4 minutos', TRUE
+FROM categoria WHERE nombre = 'Bebidas'
+UNION ALL
+SELECT id, 'Pastel de chocolate', 'Suave, intenso y delicioso.', 3.50, NULL, NULL, TRUE
+FROM categoria WHERE nombre = 'Postres'
+UNION ALL
+SELECT id, 'Croissant', 'Hojaldre artesanal.', 2.00, NULL, NULL, TRUE
+FROM categoria WHERE nombre = 'Comida';
+
+INSERT INTO inventario (producto_id, cantidad, stock_minimo)
+SELECT id, 30, 5 FROM producto WHERE NOT EXISTS (
+    SELECT 1 FROM inventario WHERE inventario.producto_id = producto.id
+);

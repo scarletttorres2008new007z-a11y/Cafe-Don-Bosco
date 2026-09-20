@@ -25,6 +25,20 @@ public final class ConexionBD {
     private static final String USUARIO = System.getenv().getOrDefault("DB_USUARIO", "root");
     private static final String PASSWORD = System.getenv().getOrDefault("DB_PASSWORD", "");
 
+    static {
+        // En un servidor como Tomcat, el driver vive en WEB-INF/lib y se
+        // carga con el classloader propio de la aplicacion; el registro
+        // automatico via ServiceLoader que funciona en un classpath plano
+        // no siempre se dispara ahi, y DriverManager.getConnection()
+        // termina fallando con "No suitable driver found". Forzamos la
+        // carga de la clase para que su bloque estatico se registre.
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new ExceptionInInitializerError("No se encontro el driver JDBC de MySQL en el classpath: " + e);
+        }
+    }
+
     private ConexionBD() {
     }
 

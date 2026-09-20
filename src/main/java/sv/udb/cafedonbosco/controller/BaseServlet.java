@@ -21,6 +21,9 @@ public abstract class BaseServlet extends HttpServlet {
 
     protected void manejarError(HttpServletResponse response, Exception excepcion) throws IOException {
         if (excepcion instanceof AppException appException) {
+            if (appException.getCause() != null) {
+                logger.log(Level.WARNING, "AppException con causa: " + appException.getMessage(), appException.getCause());
+            }
             JsonUtil.error(response, appException.getCodigoHttp(), appException.getMessage());
             return;
         }

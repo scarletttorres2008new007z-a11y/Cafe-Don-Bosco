@@ -21,9 +21,12 @@ controller (Servlets) -> service (reglas de negocio) -> dao (JDBC) -> MySQL
 - **service / service.impl**: validaciones y logica de negocio, incluida
   la transaccion de venta (registro + descuento de stock atomico).
 - **controller**: Servlets anotados con `@WebServlet` que exponen la API
-  bajo `/api/...`.
-- **filter**: `CorsFilter` (global) y `RolAdminFilter` (protege
-  `/api/admin/*`).
+  JSON bajo `/api/...`.
+- **controller.vista**: Servlets que hacen `forward()` a JSP (login,
+  productos, detalle) para el sistema de mostrador propiamente dicho.
+- **filter**: `CorsFilter` y `RolAdminFilter` (protegen `/api/admin/*`),
+  y `SesionVistaFilter` (protege las pantallas JSP `/productos` y
+  `/producto`).
 - **util**: `ConexionBD`, `PasswordUtil` (BCrypt), `JsonUtil` (Gson),
   `ValidacionUtil`, `SessionUtil`, `Constantes`.
 - **exception**: `AppException` y subclases especificas, todas mapeadas a
@@ -76,7 +79,30 @@ Esto genera `target/CafeDonBosco.war`. Copialo a la carpeta `webapps` de
 Tomcat (o despliegalo con el manager de Tomcat) y la aplicacion quedara
 disponible en `http://localhost:8080/CafeDonBosco/`.
 
-## Endpoints principales
+## Sistema de mostrador (pantallas JSP)
+
+Ademas de la API JSON, la aplicacion sirve un flujo de paginas
+JSP/Servlet pensado para usarse en una computadora del mostrador:
+
+| Ruta | Metodo | Acceso | Descripcion |
+| --- | --- | --- | --- |
+| `/login` | GET/POST | Publico | Formulario de inicio de sesion |
+| `/logout` | GET | - | Cierra la sesion y vuelve a `/login` |
+| `/productos` | GET | Requiere sesion | Pantalla principal: catalogo de productos |
+| `/producto?id={id}` | GET | Requiere sesion | Detalle de un producto |
+
+`SesionVistaFilter` redirige a `/login` cualquier intento de entrar a
+`/productos` o `/producto` sin sesion iniciada. Las tres vistas
+(`login.jsp`, `productos.jsp`, `detalle-producto.jsp`) viven en
+`WEB-INF/views/` para que solo puedan alcanzarse mediante
+`RequestDispatcher.forward()` desde su servlet, nunca por URL directa, y
+usan JSTL (`<c:forEach>`, `<c:if>`) en vez de scriptlets Java.
+
+Este flujo fue probado de punta a punta contra un Tomcat 10 y un MySQL 8
+reales (login correcto, login fallido, listado de productos, detalle
+existente, detalle inexistente y logout), no solo compilado.
+
+## Endpoints principales de la API
 
 | Metodo | Ruta | Acceso | Descripcion |
 | --- | --- | --- | --- |
@@ -121,6 +147,17 @@ Todas las respuestas usan el sobre `ApiResponse`:
   (`UUID`), no por el id incremental de la venta.
 - `RolAdminFilter` protege toda la seccion `/api/admin/*`.
 
+## Nota tecnica: registro del driver JDBC en Tomcat
+
+`ConexionBD` carga explicitamente `com.mysql.cj.jdbc.Driver` con
+`Class.forName(...)` en un bloque estatico. En un classpath plano el
+driver se auto-registra via `ServiceLoader`, pero dentro de un servlet
+container el JAR vive en `WEB-INF/lib` bajo el classloader propio de la
+aplicacion, y ese registro automatico no siempre se dispara: sin este
+`Class.forName`, `DriverManager.getConnection()` falla con
+`No suitable driver found`, algo que solo aparece al desplegar en un
+Tomcat real (no en `mvn compile`/`package`, que no ejecutan el codigo).
+
 ## Usuario administrador de prueba
 
 El script `db/schema.sql` crea `admin@cafedonbosco.com`. Cambia esa
@@ -129,7 +166,9 @@ de usar el sistema en un entorno real.
 
 ## Pendiente para siguientes fases
 
-- Frontend (JSP/HTML + JS) consumiendo esta API.
+- Frontend JS/SPA que consuma la API JSON para el flujo completo de
+  carrito/checkout/ticket (hoy ese flujo solo existe como API; las
+  pantallas JSP cubren login + catalogo + detalle para el mostrador).
 - "Mis pedidos" para el consumidor autenticado.
 - Generacion de PDF real del ticket (hoy se sirve como JSON para que el
   frontend lo renderice).
