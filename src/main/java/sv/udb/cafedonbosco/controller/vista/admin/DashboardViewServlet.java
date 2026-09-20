@@ -1,4 +1,4 @@
-package sv.udb.cafedonbosco.controller.vista;
+package sv.udb.cafedonbosco.controller.vista.admin;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
@@ -6,29 +6,33 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import sv.udb.cafedonbosco.dto.response.ProductoResponseDTO;
+import sv.udb.cafedonbosco.service.DashboardService;
 import sv.udb.cafedonbosco.service.ProductoService;
+import sv.udb.cafedonbosco.service.impl.DashboardServiceImpl;
 import sv.udb.cafedonbosco.service.impl.ProductoServiceImpl;
 import sv.udb.cafedonbosco.util.SessionUtil;
 
 import java.io.IOException;
+import java.util.List;
 
-/**
- * Pantalla principal del mostrador: lista los productos activos del
- * catalogo. Protegida por SesionVistaFilter, ya que el cliente pidio un
- * sistema con inicio de sesion antes de poder usarlo.
- */
-@WebServlet(name = "ProductosViewServlet", urlPatterns = "/productos")
-public class ProductosViewServlet extends HttpServlet {
+@WebServlet(name = "AdminDashboardViewServlet", urlPatterns = "/admin/dashboard")
+public class DashboardViewServlet extends HttpServlet {
 
-    private static final String VISTA = "/WEB-INF/views/productos.jsp";
+    private static final String VISTA = "/WEB-INF/views/admin/dashboard.jsp";
 
+    private final DashboardService dashboardService = new DashboardServiceImpl();
     private final ProductoService productoService = new ProductoServiceImpl();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        request.setAttribute("activo", "dashboard");
         request.setAttribute("usuario", SessionUtil.obtenerUsuarioAutenticado(request));
-        request.setAttribute("productos", productoService.listarCatalogo(null, null, "nombre"));
+        request.setAttribute("resumen", dashboardService.obtenerResumen());
+
+        List<ProductoResponseDTO> destacados = productoService.listarCatalogo(null, null, "nombre");
+        request.setAttribute("destacados", destacados.subList(0, Math.min(4, destacados.size())));
 
         RequestDispatcher dispatcher = request.getRequestDispatcher(VISTA);
         dispatcher.forward(request, response);

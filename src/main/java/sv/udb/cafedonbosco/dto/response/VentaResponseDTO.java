@@ -2,10 +2,13 @@ package sv.udb.cafedonbosco.dto.response;
 
 import sv.udb.cafedonbosco.model.EstadoVenta;
 import sv.udb.cafedonbosco.model.TipoVenta;
+import sv.udb.cafedonbosco.util.FormatoUtil;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Representa una venta ya registrada, tanto para la confirmacion de compra
@@ -15,6 +18,9 @@ import java.util.List;
  * al administrador por sesion.
  */
 public class VentaResponseDTO {
+
+    private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy", new Locale("es"));
+    private static final DateTimeFormatter FORMATO_HORA = DateTimeFormatter.ofPattern("hh:mm a", new Locale("es"));
 
     private Integer id;
     private TipoVenta tipoVenta;
@@ -119,6 +125,31 @@ public class VentaResponseDTO {
 
     public void setFecha(LocalDateTime fecha) {
         this.fecha = fecha;
+    }
+
+    /**
+     * Fecha/hora formateadas para las vistas JSP: JSTL fmt:formatDate solo
+     * acepta java.util.Date, no LocalDateTime, asi que la vista usa estos
+     * getters en vez de intentar formatear el campo crudo.
+     */
+    public String getFechaFormateada() {
+        return fecha != null ? fecha.format(FORMATO_FECHA) : "";
+    }
+
+    public String getHoraFormateada() {
+        return fecha != null ? fecha.format(FORMATO_HORA) : "";
+    }
+
+    public String getSubtotalFormateado() {
+        return FormatoUtil.moneda(subtotal);
+    }
+
+    public String getEnvioFormateado() {
+        return FormatoUtil.moneda(envio);
+    }
+
+    public String getTotalFormateado() {
+        return FormatoUtil.moneda(total);
     }
 
     public String getTokenTicket() {

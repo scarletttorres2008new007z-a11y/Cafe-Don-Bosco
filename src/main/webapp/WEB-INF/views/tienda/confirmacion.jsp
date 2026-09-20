@@ -1,0 +1,62 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cafe Don Bosco - Pedido confirmado</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/variables.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/base.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/tienda.css">
+</head>
+<body>
+<%@ include file="_header.jspf" %>
+
+<div class="contenedor-tienda">
+    <c:choose>
+        <c:when test="${not empty error}">
+            <div class="mensaje-error">${error}</div>
+        </c:when>
+        <c:otherwise>
+            <div class="confirmacion-caja">
+                <div class="icono-check">&#10003;</div>
+                <h2>&iexcl;Pedido confirmado!</h2>
+                <p>Gracias por tu compra. Tu pedido ha sido procesado correctamente.</p>
+
+                <div class="detalle-pedido-grid">
+                    <div>
+                        <span class="etiqueta-info">Numero de pedido</span>
+                        #000${venta.id}
+                    </div>
+                    <div>
+                        <span class="etiqueta-info">Fecha</span>
+                        ${venta.fechaFormateada}
+                    </div>
+                    <div>
+                        <span class="etiqueta-info">Hora</span>
+                        ${venta.horaFormateada}
+                    </div>
+                    <div>
+                        <span class="etiqueta-info">Total</span>
+                        $${venta.totalFormateado}
+                    </div>
+                </div>
+
+                <p>
+                    <c:choose>
+                        <c:when test="${venta.tipoEntrega == 'DOMICILIO'}">Tu pedido sera entregado a domicilio.</c:when>
+                        <c:otherwise>Tu pedido sera preparado en un maximo de 10 minutos.</c:otherwise>
+                    </c:choose>
+                </p>
+
+                <a class="boton" href="${pageContext.request.contextPath}/tienda/ticket?token=${venta.tokenTicket}">Ver ticket</a>
+                <a class="boton secundario" href="${pageContext.request.contextPath}/tienda" style="margin-left:10px;">Volver al inicio</a>
+            </div>
+        </c:otherwise>
+    </c:choose>
+</div>
+
+<%@ include file="_footer.jspf" %>
+</body>
+</html>

@@ -1,5 +1,7 @@
 package sv.udb.cafedonbosco.dto.response;
 
+import sv.udb.cafedonbosco.util.FormatoUtil;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -45,6 +47,14 @@ public class DashboardResponseDTO {
 
     public void setTotalVentasMes(BigDecimal totalVentasMes) {
         this.totalVentasMes = totalVentasMes;
+    }
+
+    public String getVentasHoyTotalFormateado() {
+        return FormatoUtil.moneda(ventasHoyTotal);
+    }
+
+    public String getTotalVentasMesFormateado() {
+        return FormatoUtil.moneda(totalVentasMes);
     }
 
     public List<VentaResponseDTO> getVentasRecientes() {

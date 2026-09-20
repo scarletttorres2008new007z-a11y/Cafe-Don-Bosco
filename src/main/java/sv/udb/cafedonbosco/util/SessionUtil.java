@@ -25,11 +25,19 @@ public final class SessionUtil {
     }
 
     public static Carrito obtenerOCrearCarrito(HttpServletRequest request) {
+        return obtenerOCrearCarrito(request, Constantes.SESSION_CARRITO);
+    }
+
+    public static Carrito obtenerOCrearCarritoAdmin(HttpServletRequest request) {
+        return obtenerOCrearCarrito(request, Constantes.SESSION_CARRITO_ADMIN);
+    }
+
+    private static Carrito obtenerOCrearCarrito(HttpServletRequest request, String atributo) {
         HttpSession sesion = request.getSession(true);
-        Carrito carrito = (Carrito) sesion.getAttribute(Constantes.SESSION_CARRITO);
+        Carrito carrito = (Carrito) sesion.getAttribute(atributo);
         if (carrito == null) {
             carrito = new Carrito();
-            sesion.setAttribute(Constantes.SESSION_CARRITO, carrito);
+            sesion.setAttribute(atributo, carrito);
         }
         return carrito;
     }

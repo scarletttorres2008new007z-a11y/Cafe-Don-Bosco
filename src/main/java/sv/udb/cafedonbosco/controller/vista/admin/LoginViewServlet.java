@@ -1,4 +1,4 @@
-package sv.udb.cafedonbosco.controller.vista;
+package sv.udb.cafedonbosco.controller.vista.admin;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import sv.udb.cafedonbosco.dto.response.UsuarioResponseDTO;
 import sv.udb.cafedonbosco.exception.AppException;
+import sv.udb.cafedonbosco.model.Rol;
 import sv.udb.cafedonbosco.service.AuthService;
 import sv.udb.cafedonbosco.service.impl.AuthServiceImpl;
 import sv.udb.cafedonbosco.util.Constantes;
@@ -19,23 +20,23 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Pantalla de inicio de sesion del mostrador. GET muestra el formulario;
- * POST valida las credenciales con el mismo AuthService que usa la API
- * JSON y, si son correctas, guarda al usuario en la sesion y redirige a
- * la pantalla principal de productos.
+ * Login exclusivo del panel de administrador. El consumidor nunca pasa
+ * por aqui: entra directo a la tienda desde el portal, sin cuenta ni
+ * contrasena. Por eso el login exige explicitamente Rol.ADMINISTRADOR
+ * en vez de aceptar cualquier usuario valido.
  */
-@WebServlet(name = "LoginViewServlet", urlPatterns = "/login")
+@WebServlet(name = "AdminLoginViewServlet", urlPatterns = "/login")
 public class LoginViewServlet extends HttpServlet {
 
-    private static final String VISTA = "/WEB-INF/views/login.jsp";
+    private static final String VISTA = "/WEB-INF/views/admin/login.jsp";
     private final Logger logger = Logger.getLogger(getClass().getName());
     private final AuthService authService = new AuthServiceImpl();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        if (SessionUtil.obtenerUsuarioAutenticado(request) != null) {
-            response.sendRedirect(request.getContextPath() + "/productos");
+        if (SessionUtil.tieneRol(request, Rol.ADMINISTRADOR)) {
+            response.sendRedirect(request.getContextPath() + "/admin/dashboard");
             return;
         }
         mostrarFormulario(request, response, null);
@@ -48,12 +49,12 @@ public class LoginViewServlet extends HttpServlet {
         String password = request.getParameter("password");
 
         try {
-            UsuarioResponseDTO usuario = authService.login(correo, password, null);
+            UsuarioResponseDTO usuario = authService.login(correo, password, Rol.ADMINISTRADOR);
             HttpSession sesion = request.getSession(true);
             sesion.setAttribute(Constantes.SESSION_USUARIO, usuario);
-            response.sendRedirect(request.getContextPath() + "/productos");
+            response.sendRedirect(request.getContextPath() + "/admin/dashboard");
         } catch (AppException e) {
-            logger.log(Level.WARNING, "Login rechazado: " + e.getMessage(), e.getCause());
+            logger.log(Level.WARNING, "Login de administrador rechazado: " + e.getMessage(), e.getCause());
             mostrarFormulario(request, response, e.getMessage());
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error inesperado al iniciar sesion", e);

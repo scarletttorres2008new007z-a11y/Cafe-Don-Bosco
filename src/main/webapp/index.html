@@ -2,12 +2,93 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Cafe Don Bosco</title>
-    <meta http-equiv="refresh" content="0; url=login">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <style>
+        .portal {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .portal .marca-portal {
+            font-size: 2.6rem;
+        }
+
+        .portal .marca-portal small {
+            display: block;
+            font-size: 1rem;
+            color: var(--color-cobre);
+            font-family: var(--fuente-interfaz);
+        }
+
+        .opciones-portal {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .opcion-portal {
+            background: var(--color-blanco);
+            border-radius: var(--radio-lg);
+            box-shadow: var(--sombra-suave);
+            padding: 36px 40px;
+            width: 260px;
+            text-decoration: none;
+            color: var(--color-cafe);
+            transition: transform 0.15s ease;
+        }
+
+        .opcion-portal:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--sombra-flotante);
+        }
+
+        .opcion-portal .icono {
+            font-size: 2.4rem;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .opcion-portal h2 {
+            font-family: var(--fuente-interfaz);
+            font-size: 1.15rem;
+            margin: 0 0 6px;
+        }
+
+        .opcion-portal p {
+            font-size: 0.88rem;
+            color: #7a6a5c;
+            margin: 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>Cafe Don Bosco</h1>
-    <p>Sistema de mostrador: <a href="login">iniciar sesion</a>.</p>
-    <p>API REST disponible bajo <code>/api/...</code></p>
+    <div class="portal">
+        <h1 class="marca-portal">&#9749; Cafe Don Bosco<small>Buen cafe, mejores momentos</small></h1>
+
+        <p>&#191;Como quieres entrar?</p>
+
+        <div class="opciones-portal">
+            <a class="opcion-portal" href="login">
+                <span class="icono">&#128100;</span>
+                <h2>Soy Administrador</h2>
+                <p>Gestiona el mostrador: dashboard, ventas e historial. Requiere inicio de sesion.</p>
+            </a>
+            <a class="opcion-portal" href="tienda">
+                <span class="icono">&#9749;</span>
+                <h2>Soy Consumidor</h2>
+                <p>Explora el menu y compra directo, sin necesidad de crear una cuenta.</p>
+            </a>
+        </div>
+    </div>
 </body>
 </html>

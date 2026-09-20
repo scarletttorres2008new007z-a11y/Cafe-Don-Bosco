@@ -1,0 +1,19 @@
+<div class="tarjeta-producto">
+    <div class="imagen-producto">&#9749;</div>
+    <span class="etiqueta">${producto.categoriaNombre}</span>
+    <h3>${producto.nombre}</h3>
+    <p class="ayuda">${producto.descripcion}</p>
+    <span class="precio">$${producto.precioFormateado}</span>
+    <c:choose>
+        <c:when test="${producto.disponible}"><span class="disponible">Disponible</span></c:when>
+        <c:otherwise><span class="no-disponible">Agotado</span></c:otherwise>
+    </c:choose>
+    <a class="boton secundario" href="${pageContext.request.contextPath}/tienda/producto?id=${producto.id}">Ver detalle</a>
+    <form method="post" action="${pageContext.request.contextPath}/tienda/carrito">
+        <input type="hidden" name="accion" value="agregar">
+        <input type="hidden" name="productoId" value="${producto.id}">
+        <input type="hidden" name="cantidad" value="1">
+        <input type="hidden" name="volver" value="${pageContext.request.requestURI}${not empty pageContext.request.queryString ? '?' : ''}${pageContext.request.queryString}">
+        <button type="submit" class="boton" style="width:100%;" ${producto.disponible ? '' : 'disabled'}>&#128722; Agregar al carrito</button>
+    </form>
+</div>

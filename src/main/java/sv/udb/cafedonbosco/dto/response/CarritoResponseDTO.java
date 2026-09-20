@@ -1,6 +1,7 @@
 package sv.udb.cafedonbosco.dto.response;
 
 import sv.udb.cafedonbosco.model.CarritoItem;
+import sv.udb.cafedonbosco.util.FormatoUtil;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -62,5 +63,17 @@ public class CarritoResponseDTO {
 
     public void setTotal(BigDecimal total) {
         this.total = total;
+    }
+
+    public String getSubtotalFormateado() {
+        return FormatoUtil.moneda(subtotal);
+    }
+
+    public String getEnvioFormateado() {
+        return FormatoUtil.moneda(envio);
+    }
+
+    public String getTotalFormateado() {
+        return FormatoUtil.moneda(total);
     }
 }

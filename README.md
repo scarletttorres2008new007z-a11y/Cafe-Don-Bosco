@@ -22,11 +22,11 @@ controller (Servlets) -> service (reglas de negocio) -> dao (JDBC) -> MySQL
   la transaccion de venta (registro + descuento de stock atomico).
 - **controller**: Servlets anotados con `@WebServlet` que exponen la API
   JSON bajo `/api/...`.
-- **controller.vista**: Servlets que hacen `forward()` a JSP (login,
-  productos, detalle) para el sistema de mostrador propiamente dicho.
+- **controller.vista.admin** / **controller.vista.tienda**: Servlets que
+  hacen `forward()` a JSP para el panel del administrador y la tienda
+  del consumidor respectivamente (ver secciones de abajo).
 - **filter**: `CorsFilter` y `RolAdminFilter` (protegen `/api/admin/*`),
-  y `SesionVistaFilter` (protege las pantallas JSP `/productos` y
-  `/producto`).
+  y `SesionVistaFilter` (protege las pantallas JSP bajo `/admin/*`).
 - **util**: `ConexionBD`, `PasswordUtil` (BCrypt), `JsonUtil` (Gson),
   `ValidacionUtil`, `SessionUtil`, `Constantes`.
 - **exception**: `AppException` y subclases especificas, todas mapeadas a
@@ -79,28 +79,63 @@ Esto genera `target/CafeDonBosco.war`. Copialo a la carpeta `webapps` de
 Tomcat (o despliegalo con el manager de Tomcat) y la aplicacion quedara
 disponible en `http://localhost:8080/CafeDonBosco/`.
 
-## Sistema de mostrador (pantallas JSP)
+## Frontend JSP: portal, administrador y tienda
 
-Ademas de la API JSON, la aplicacion sirve un flujo de paginas
-JSP/Servlet pensado para usarse en una computadora del mostrador:
+Ademas de la API JSON, la aplicacion sirve un frontend completo en
+JSP/Servlet. `index.html` es un portal de entrada con dos caminos que
+nunca se mezclan:
 
-| Ruta | Metodo | Acceso | Descripcion |
-| --- | --- | --- | --- |
-| `/login` | GET/POST | Publico | Formulario de inicio de sesion |
-| `/logout` | GET | - | Cierra la sesion y vuelve a `/login` |
-| `/productos` | GET | Requiere sesion | Pantalla principal: catalogo de productos |
-| `/producto?id={id}` | GET | Requiere sesion | Detalle de un producto |
+- **Administrador**: requiere iniciar sesion. Sin sesion con rol
+  `ADMINISTRADOR`, `SesionVistaFilter` redirige cualquier ruta bajo
+  `/admin/*` a `/login`.
+- **Consumidor**: entra directo a la tienda sin cuenta ni contrasena.
+  No existe ningun login para consumidores; el carrito y el checkout
+  funcionan enteramente sobre la sesion HTTP como invitado.
 
-`SesionVistaFilter` redirige a `/login` cualquier intento de entrar a
-`/productos` o `/producto` sin sesion iniciada. Las tres vistas
-(`login.jsp`, `productos.jsp`, `detalle-producto.jsp`) viven en
-`WEB-INF/views/` para que solo puedan alcanzarse mediante
-`RequestDispatcher.forward()` desde su servlet, nunca por URL directa, y
-usan JSTL (`<c:forEach>`, `<c:if>`) en vez de scriptlets Java.
+### Panel del administrador (`/admin/*`, protegido)
 
-Este flujo fue probado de punta a punta contra un Tomcat 10 y un MySQL 8
-reales (login correcto, login fallido, listado de productos, detalle
-existente, detalle inexistente y logout), no solo compilado.
+| Ruta | Descripcion |
+| --- | --- |
+| `/login`, `/logout` | Inicio/cierre de sesion, exclusivo para `ADMINISTRADOR` |
+| `/admin/dashboard` | KPIs del dia/mes, ventas recientes, accesos rapidos, stock bajo |
+| `/admin/productos` | Catalogo administrativo con stock exacto (solo lectura) |
+| `/admin/venta-nueva` | POS: arma una venta presencial reutilizando `CarritoService` y la registra con `VentaService.registrarVentaPresencial` |
+| `/admin/historial-ventas` | Historial combinado de ventas presenciales y web |
+| `/admin/ticket?id={id}` | Comprobante de cualquier venta, por id (el administrador ya esta autenticado) |
+
+### Tienda del consumidor (`/tienda/*`, publico)
+
+| Ruta | Descripcion |
+| --- | --- |
+| `/tienda` | Home: destacados y categorias |
+| `/tienda/menu` | Catalogo completo (busqueda, filtro por categoria, orden) |
+| `/tienda/producto?id={id}` | Detalle de producto con relacionados |
+| `/tienda/carrito` | Carrito de sesion (agregar/quitar/vaciar) |
+| `/tienda/checkout` | Datos de envio + metodo de pago, registra la venta WEB |
+| `/tienda/confirmacion?token={token}` | Confirmacion inmediata tras la compra |
+| `/tienda/ticket?token={token}` | Comprobante imprimible |
+| `/tienda/nosotros` | Pagina institucional |
+
+El carrito del consumidor y el "carrito" del POS del administrador usan
+la misma clase `Carrito`/`CarritoService`, pero se guardan en atributos
+de sesion distintos (`SESSION_CARRITO` vs `SESSION_CARRITO_ADMIN`) para
+que probar ambos flujos en el mismo navegador no mezcle una venta de
+mostrador con una compra web.
+
+Todas las vistas viven en `WEB-INF/views/` (solo alcanzables por
+`RequestDispatcher.forward()`, nunca por URL directa) y usan JSTL en vez
+de scriptlets Java. Los tickets de admin y de la tienda comparten el
+mismo fragmento `_ticket-contenido.jspf`.
+
+Este flujo completo fue probado de punta a punta contra un Tomcat 10 y
+un MySQL 8 reales: login correcto/fallido, proteccion de `/admin/*` sin
+sesion, una venta POS con dos productos (verificando el descuento de
+stock y el total en el dashboard/historial), navegacion del catalogo con
+filtros, agregar/quitar del carrito, un intento de open-redirect en el
+parametro `volver` (rechazado), validacion de checkout con entrega a
+domicilio sin direccion, una compra web completa con confirmacion y
+ticket, un token de ticket inventado (rechazado) y logout. El log del
+servidor no registro ningun error ni advertencia durante toda la prueba.
 
 ## Endpoints principales de la API
 
@@ -166,9 +201,12 @@ de usar el sistema en un entorno real.
 
 ## Pendiente para siguientes fases
 
-- Frontend JS/SPA que consuma la API JSON para el flujo completo de
-  carrito/checkout/ticket (hoy ese flujo solo existe como API; las
-  pantallas JSP cubren login + catalogo + detalle para el mostrador).
-- "Mis pedidos" para el consumidor autenticado.
-- Generacion de PDF real del ticket (hoy se sirve como JSON para que el
-  frontend lo renderice).
+- Formularios de alta/edicion de productos y categorias en el panel de
+  administrador (hoy `/admin/productos` es de solo lectura; crear/editar
+  ya existe en la API `/api/admin/productos` pero sin vista JSP propia).
+- Registro y "Mis pedidos" para un consumidor que si quiera crear cuenta
+  (la API ya soporta `/api/auth/registro`; el consumidor de la tienda
+  siempre compra como invitado, sin login).
+- Generacion de PDF real del ticket (hoy "Imprimir / Descargar PDF" usa
+  `window.print()`, que en cualquier navegador permite guardar como PDF
+  desde el dialogo de impresion).

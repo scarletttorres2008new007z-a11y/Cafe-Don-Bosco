@@ -1,0 +1,51 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<div class="ticket">
+    <div class="encabezado-ticket">
+        <h2>&#9749; Cafe Don Bosco</h2>
+        <p class="ayuda">Buen cafe, mejores momentos.</p>
+        <h3 style="font-family: var(--fuente-interfaz); font-size:0.95rem;">TICKET DE COMPRA</h3>
+    </div>
+
+    <p>
+        <strong>Numero de pedido:</strong> #000${venta.id}<br>
+        <strong>Fecha:</strong> ${venta.fechaFormateada}<br>
+        <strong>Hora:</strong> ${venta.horaFormateada}
+    </p>
+
+    <table class="tabla">
+        <thead>
+        <tr>
+            <th>Producto</th>
+            <th>Cant.</th>
+            <th>Precio</th>
+            <th>Total</th>
+        </tr>
+        </thead>
+        <tbody>
+        <c:forEach var="detalle" items="${venta.detalles}">
+            <tr>
+                <td>${detalle.nombreProducto}</td>
+                <td>${detalle.cantidad}</td>
+                <td>$${detalle.precioUnitarioFormateado}</td>
+                <td>$${detalle.subtotalFormateado}</td>
+            </tr>
+        </c:forEach>
+        </tbody>
+    </table>
+
+    <div class="totales">
+        <dl>
+            <dt>Subtotal</dt>
+            <dd>$${venta.subtotalFormateado}</dd>
+            <dt>Envio</dt>
+            <dd>$${venta.envioFormateado}</dd>
+            <dt class="total-final">Total</dt>
+            <dd class="total-final">$${venta.totalFormateado}</dd>
+        </dl>
+    </div>
+
+    <p style="text-align:center; margin-top:18px;">
+        &iexcl;Gracias por tu compra!<br>
+        <small>Vuelve pronto &hearts;</small>
+    </p>
+</div>

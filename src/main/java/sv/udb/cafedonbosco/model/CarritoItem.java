@@ -1,5 +1,7 @@
 package sv.udb.cafedonbosco.model;
 
+import sv.udb.cafedonbosco.util.FormatoUtil;
+
 import java.math.BigDecimal;
 
 /**
@@ -74,5 +76,13 @@ public class CarritoItem {
 
     public BigDecimal getSubtotal() {
         return precioUnitario.multiply(BigDecimal.valueOf(cantidad));
+    }
+
+    public String getPrecioUnitarioFormateado() {
+        return FormatoUtil.moneda(precioUnitario);
+    }
+
+    public String getSubtotalFormateado() {
+        return FormatoUtil.moneda(getSubtotal());
     }
 }

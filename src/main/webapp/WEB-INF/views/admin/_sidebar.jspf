@@ -1,0 +1,21 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<aside class="barra-lateral">
+    <div class="marca">
+        <span class="icono">&#9749;</span>
+        <h1>Cafe<br>Don Bosco</h1>
+    </div>
+    <p class="eslogan">Buen cafe, mejores momentos</p>
+
+    <nav>
+        <a href="${pageContext.request.contextPath}/admin/dashboard" class="${activo == 'dashboard' ? 'activo' : ''}">&#8962; Inicio</a>
+        <a href="${pageContext.request.contextPath}/admin/productos" class="${activo == 'productos' ? 'activo' : ''}">&#9749; Productos</a>
+        <a href="${pageContext.request.contextPath}/admin/venta-nueva" class="${activo == 'venta-nueva' ? 'activo' : ''}">&#128722; Nueva venta</a>
+        <a href="${pageContext.request.contextPath}/admin/historial-ventas" class="${activo == 'historial' ? 'activo' : ''}">&#128337; Historial de ventas</a>
+        <a href="${pageContext.request.contextPath}/logout">&#8618; Cerrar sesion</a>
+    </nav>
+
+    <div class="pie">
+        Cafe Don Bosco<br>
+        Sistema de mostrador v1.0
+    </div>
+</aside>

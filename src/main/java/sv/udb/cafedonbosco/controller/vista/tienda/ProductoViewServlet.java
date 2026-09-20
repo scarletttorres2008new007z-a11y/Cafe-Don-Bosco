@@ -1,38 +1,33 @@
-package sv.udb.cafedonbosco.controller.vista;
+package sv.udb.cafedonbosco.controller.vista.tienda;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import sv.udb.cafedonbosco.exception.RecursoNoEncontradoException;
 import sv.udb.cafedonbosco.service.ProductoService;
 import sv.udb.cafedonbosco.service.impl.ProductoServiceImpl;
-import sv.udb.cafedonbosco.util.SessionUtil;
 
 import java.io.IOException;
 
-/**
- * Pantalla de detalle de un producto especifico (GET /producto?id=..).
- * Protegida por SesionVistaFilter igual que la pantalla principal.
- */
-@WebServlet(name = "ProductoDetalleViewServlet", urlPatterns = "/producto")
-public class ProductoDetalleViewServlet extends HttpServlet {
+@WebServlet(name = "TiendaProductoViewServlet", urlPatterns = "/tienda/producto")
+public class ProductoViewServlet extends TiendaBaseServlet {
 
-    private static final String VISTA = "/WEB-INF/views/detalle-producto.jsp";
+    private static final String VISTA = "/WEB-INF/views/tienda/producto.jsp";
 
     private final ProductoService productoService = new ProductoServiceImpl();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.setAttribute("usuario", SessionUtil.obtenerUsuarioAutenticado(request));
+        request.setAttribute("activo", "menu");
+        request.setAttribute("carritoUnidades", contarUnidadesCarrito(request));
 
-        String idParametro = request.getParameter("id");
         try {
-            int id = Integer.parseInt(idParametro);
+            int id = Integer.parseInt(request.getParameter("id"));
             request.setAttribute("producto", productoService.obtenerDetalle(id));
+            request.setAttribute("relacionados", productoService.listarRelacionados(id, 4));
         } catch (NumberFormatException e) {
             request.setAttribute("error", "El producto solicitado no es valido.");
         } catch (RecursoNoEncontradoException e) {

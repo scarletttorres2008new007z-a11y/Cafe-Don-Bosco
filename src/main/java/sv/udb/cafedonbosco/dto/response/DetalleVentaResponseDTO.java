@@ -1,5 +1,7 @@
 package sv.udb.cafedonbosco.dto.response;
 
+import sv.udb.cafedonbosco.util.FormatoUtil;
+
 import java.math.BigDecimal;
 
 public class DetalleVentaResponseDTO {
@@ -59,5 +61,13 @@ public class DetalleVentaResponseDTO {
 
     public void setSubtotal(BigDecimal subtotal) {
         this.subtotal = subtotal;
+    }
+
+    public String getPrecioUnitarioFormateado() {
+        return FormatoUtil.moneda(precioUnitario);
+    }
+
+    public String getSubtotalFormateado() {
+        return FormatoUtil.moneda(subtotal);
     }
 }

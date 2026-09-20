@@ -1,4 +1,4 @@
-package sv.udb.cafedonbosco.controller.vista;
+package sv.udb.cafedonbosco.controller.vista.admin;
 
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
-@WebServlet(name = "LogoutViewServlet", urlPatterns = "/logout")
+@WebServlet(name = "AdminLogoutViewServlet", urlPatterns = "/logout")
 public class LogoutViewServlet extends HttpServlet {
 
     @Override
