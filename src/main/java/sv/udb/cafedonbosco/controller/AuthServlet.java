@@ -67,7 +67,7 @@ public class AuthServlet extends BaseServlet {
                 datos != null ? datos.getPassword() : null,
                 null
         );
-        HttpSession sesion = request.getSession(true);
+        HttpSession sesion = iniciarSesionSegura(request);
         sesion.setAttribute(Constantes.SESSION_USUARIO, usuario);
         JsonUtil.exito(response, HttpServletResponse.SC_OK, "Bienvenido, " + usuario.getNombre(), usuario);
     }
@@ -75,9 +75,21 @@ public class AuthServlet extends BaseServlet {
     private void registro(HttpServletRequest request, HttpServletResponse response) throws IOException {
         RegistroConsumidorDTO datos = JsonUtil.leerCuerpo(request, RegistroConsumidorDTO.class);
         UsuarioResponseDTO usuario = authService.registrarConsumidor(datos);
-        HttpSession sesion = request.getSession(true);
+        HttpSession sesion = iniciarSesionSegura(request);
         sesion.setAttribute(Constantes.SESSION_USUARIO, usuario);
         JsonUtil.exito(response, HttpServletResponse.SC_CREATED, "Cuenta creada correctamente", usuario);
+    }
+
+    /**
+     * Crea (o reutiliza) la sesion HTTP y siempre le asigna un id nuevo:
+     * si alguien logro fijar de antemano el id de sesion del navegador de
+     * la victima (session fixation), ese id queda invalidado justo antes
+     * de que la sesion pase a tener privilegios.
+     */
+    private HttpSession iniciarSesionSegura(HttpServletRequest request) {
+        HttpSession sesion = request.getSession(true);
+        request.changeSessionId();
+        return sesion;
     }
 
     private void logout(HttpServletRequest request, HttpServletResponse response) throws IOException {

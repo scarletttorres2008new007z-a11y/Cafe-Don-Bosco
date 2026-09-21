@@ -9,16 +9,20 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import sv.udb.cafedonbosco.util.Constantes;
 
 import java.io.IOException;
 
 /**
- * Habilita CORS para toda la API cuando el frontend se sirve desde un
- * origen distinto (por ejemplo, en desarrollo local). Refleja el Origin
- * de la solicitud en vez de usar "*" porque las rutas autenticadas
- * dependen de la cookie de sesion, que el navegador solo envia con
- * Access-Control-Allow-Credentials habilitado, algo incompatible con un
- * origen comodin.
+ * Habilita CORS para la API solo para los origenes de desarrollo listados
+ * en Constantes.ORIGENES_CORS_PERMITIDOS. Antes se reflejaba cualquier
+ * Origin de la solicitud junto con Access-Control-Allow-Credentials en
+ * true, lo que en la practica anulaba la proteccion de origen del
+ * navegador: cualquier sitio malicioso podia hacer solicitudes
+ * autenticadas a la API usando la cookie de sesion de la victima. Ahora
+ * el encabezado solo se agrega cuando el origen esta en la lista
+ * permitida; para cualquier otro origen no se agrega ningun encabezado
+ * CORS y el navegador bloquea la respuesta.
  */
 @WebFilter("/api/*")
 public class CorsFilter implements Filter {
@@ -34,11 +38,12 @@ public class CorsFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         String origen = httpRequest.getHeader("Origin");
-        if (origen != null) {
+        if (origen != null && Constantes.ORIGENES_CORS_PERMITIDOS.contains(origen)) {
             httpResponse.setHeader("Access-Control-Allow-Origin", origen);
             httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
+            httpResponse.setHeader("Vary", "Origin");
         }
-        httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
         httpResponse.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
         if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {

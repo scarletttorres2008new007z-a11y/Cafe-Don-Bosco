@@ -50,7 +50,12 @@ public class LoginViewServlet extends HttpServlet {
 
         try {
             UsuarioResponseDTO usuario = authService.login(correo, password, Rol.ADMINISTRADOR);
+            // Se cambia el id de sesion al autenticar (no solo se crea si
+            // no existia) para que un id de sesion fijado de antemano por
+            // un atacante (session fixation) quede invalidado antes de
+            // que la sesion tenga privilegios de administrador.
             HttpSession sesion = request.getSession(true);
+            request.changeSessionId();
             sesion.setAttribute(Constantes.SESSION_USUARIO, usuario);
             response.sendRedirect(request.getContextPath() + "/admin/dashboard");
         } catch (AppException e) {
