@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/variables.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/base.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/tienda.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/efectos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
 </head>
 <body>
 <%@ include file="_header.jspf" %>
@@ -28,9 +32,9 @@
                     <span class="etiqueta">${producto.categoriaNombre}</span>
                     <h2>${producto.nombre}</h2>
                     <p>${producto.descripcion}</p>
-                    <div class="detalle-precio">$${producto.precioFormateado}</div>
+                    <div class="detalle-precio odometro">$${producto.precioFormateado}</div>
 
-                    <form method="post" action="${pageContext.request.contextPath}/tienda/carrito">
+                    <form method="post" action="${pageContext.request.contextPath}/tienda/carrito" class="form-agregar-carrito">
                         <input type="hidden" name="accion" value="agregar">
                         <input type="hidden" name="productoId" value="${producto.id}">
                         <input type="hidden" name="volver" value="${pageContext.request.contextPath}/tienda/producto?id=${producto.id}">
@@ -76,5 +80,6 @@
 </div>
 
 <%@ include file="_footer.jspf" %>
+<script src="${pageContext.request.contextPath}/assets/js/efectos.js" defer></script>
 </body>
 </html>

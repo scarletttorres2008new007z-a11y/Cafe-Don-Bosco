@@ -40,7 +40,7 @@
             <dt>Envio</dt>
             <dd>$${venta.envioFormateado}</dd>
             <dt class="total-final">Total</dt>
-            <dd class="total-final">$${venta.totalFormateado}</dd>
+            <dd class="total-final odometro">$${venta.totalFormateado}</dd>
         </dl>
     </div>
 

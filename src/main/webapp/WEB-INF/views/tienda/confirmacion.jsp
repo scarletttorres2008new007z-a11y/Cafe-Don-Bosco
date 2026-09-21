@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/variables.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/base.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/tienda.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/efectos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
 </head>
 <body>
 <%@ include file="_header.jspf" %>
@@ -39,7 +43,7 @@
                     </div>
                     <div>
                         <span class="etiqueta-info">Total</span>
-                        $${venta.totalFormateado}
+                        <span class="odometro">$${venta.totalFormateado}</span>
                     </div>
                 </div>
 
@@ -58,5 +62,6 @@
 </div>
 
 <%@ include file="_footer.jspf" %>
+<script src="${pageContext.request.contextPath}/assets/js/efectos.js" defer></script>
 </body>
 </html>

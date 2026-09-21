@@ -9,11 +9,16 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/variables.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/base.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/tienda.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/efectos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
 </head>
 <body>
 <%@ include file="_header.jspf" %>
 
 <section class="hero-tienda">
+    <img class="bg-coffee-parallax" src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&amp;w=1000&amp;auto=format&amp;fit=crop" alt="" aria-hidden="true">
     <p class="etiqueta-superior">Nuestro menu</p>
     <h2>Descubre todos nuestros productos</h2>
     <p>Cafe, bebidas, postres y comida. Todo lo que necesitas para disfrutar el mejor sabor.</p>
@@ -76,5 +81,6 @@
 </div>
 
 <%@ include file="_footer.jspf" %>
+<script src="${pageContext.request.contextPath}/assets/js/efectos.js" defer></script>
 </body>
 </html>

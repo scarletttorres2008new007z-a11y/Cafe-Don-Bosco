@@ -80,7 +80,8 @@ public class CarritoViewServlet extends TiendaBaseServlet {
     private String destinoSeguro(HttpServletRequest request) {
         String volver = request.getParameter("volver");
         String contexto = request.getContextPath();
-        if (volver != null && volver.startsWith(contexto + "/") && !volver.contains("://")) {
+        if (volver != null && volver.startsWith(contexto + "/") && !volver.contains("://")
+                && !volver.startsWith(contexto + "/WEB-INF/")) {
             return volver;
         }
         return contexto + "/tienda/carrito";

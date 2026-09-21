@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/variables.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/base.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/tienda.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/efectos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
 </head>
 <body>
 <%@ include file="_header.jspf" %>
@@ -84,7 +88,7 @@
                     </div>
                 </div>
 
-                <div class="tarjeta resumen-pedido">
+                <div class="tarjeta resumen-pedido border-beam">
                     <h3>Resumen del pedido</h3>
                     <dl>
                         <dt>Subtotal</dt>
@@ -92,7 +96,7 @@
                         <dt>Envio</dt>
                         <dd>$${resumen.envioFormateado}</dd>
                         <dt class="total-final">Total</dt>
-                        <dd class="total-final">$${resumen.totalFormateado}</dd>
+                        <dd class="total-final odometro">$${resumen.totalFormateado}</dd>
                     </dl>
                     <button type="submit" class="boton" style="width:100%; margin-top:14px;">Confirmar compra</button>
                 </div>
@@ -102,5 +106,6 @@
 </div>
 
 <%@ include file="_footer.jspf" %>
+<script src="${pageContext.request.contextPath}/assets/js/efectos.js" defer></script>
 </body>
 </html>
