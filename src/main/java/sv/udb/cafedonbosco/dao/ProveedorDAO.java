@@ -12,6 +12,9 @@ public interface ProveedorDAO {
 
     Proveedor buscarPorId(int id);
 
+    /** Comparacion case-insensitive; idAExcluir se usa al editar para no chocar contra si mismo. */
+    boolean existeNombre(String nombre, Integer idAExcluir);
+
     Proveedor crear(Proveedor proveedor);
 
     void actualizar(Proveedor proveedor);

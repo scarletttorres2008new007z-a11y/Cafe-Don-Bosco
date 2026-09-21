@@ -56,6 +56,24 @@ public class ProveedorDAOImpl implements ProveedorDAO {
     }
 
     @Override
+    public boolean existeNombre(String nombre, Integer idAExcluir) {
+        String sql = "SELECT 1 FROM proveedor WHERE LOWER(nombre) = LOWER(?)"
+                + (idAExcluir != null ? " AND id <> ?" : "");
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setString(1, nombre);
+            if (idAExcluir != null) {
+                stmt.setInt(2, idAExcluir);
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al verificar el nombre del proveedor", e);
+        }
+    }
+
+    @Override
     public Proveedor crear(Proveedor proveedor) {
         String sql = "INSERT INTO proveedor (nombre, contacto, telefono, correo, direccion, activo) "
                 + "VALUES (?, ?, ?, ?, ?, ?)";

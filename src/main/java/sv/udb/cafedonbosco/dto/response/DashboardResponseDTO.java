@@ -11,6 +11,10 @@ public class DashboardResponseDTO {
     private BigDecimal ventasHoyTotal;
     private int ventasHoyCantidad;
     private BigDecimal totalVentasMes;
+    private BigDecimal ingresosTotales;
+    private int pedidosRecibidos;
+    private int pedidosEnPreparacion;
+    private int pedidosListos;
     private List<VentaResponseDTO> ventasRecientes;
     private List<ProductoAdminResponseDTO> productosStockBajo;
 
@@ -55,6 +59,42 @@ public class DashboardResponseDTO {
 
     public String getTotalVentasMesFormateado() {
         return FormatoUtil.moneda(totalVentasMes);
+    }
+
+    public BigDecimal getIngresosTotales() {
+        return ingresosTotales;
+    }
+
+    public void setIngresosTotales(BigDecimal ingresosTotales) {
+        this.ingresosTotales = ingresosTotales;
+    }
+
+    public String getIngresosTotalesFormateado() {
+        return FormatoUtil.moneda(ingresosTotales);
+    }
+
+    public int getPedidosRecibidos() {
+        return pedidosRecibidos;
+    }
+
+    public void setPedidosRecibidos(int pedidosRecibidos) {
+        this.pedidosRecibidos = pedidosRecibidos;
+    }
+
+    public int getPedidosEnPreparacion() {
+        return pedidosEnPreparacion;
+    }
+
+    public void setPedidosEnPreparacion(int pedidosEnPreparacion) {
+        this.pedidosEnPreparacion = pedidosEnPreparacion;
+    }
+
+    public int getPedidosListos() {
+        return pedidosListos;
+    }
+
+    public void setPedidosListos(int pedidosListos) {
+        this.pedidosListos = pedidosListos;
     }
 
     public List<VentaResponseDTO> getVentasRecientes() {

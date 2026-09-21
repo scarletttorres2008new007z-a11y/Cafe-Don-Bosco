@@ -364,8 +364,11 @@ public class VentaDAOImpl implements VentaDAO {
 
     @Override
     public BigDecimal sumarTotalDelDia() {
+        // Una venta con el pago aun PENDIENTE (p. ej. contra entrega o
+        // transferencia sin confirmar) todavia no es un ingreso real, asi
+        // que no debe sumar al total del dia hasta que se apruebe.
         String sql = "SELECT COALESCE(SUM(total), 0) FROM venta "
-                + "WHERE DATE(fecha) = CURDATE() AND estado <> 'CANCELADO'";
+                + "WHERE DATE(fecha) = CURDATE() AND estado <> 'CANCELADO' AND estado_pago = 'APROBADO'";
         return ejecutarSuma(sql);
     }
 
@@ -385,7 +388,7 @@ public class VentaDAOImpl implements VentaDAO {
     public BigDecimal sumarTotalDelMes() {
         String sql = "SELECT COALESCE(SUM(total), 0) FROM venta "
                 + "WHERE YEAR(fecha) = YEAR(CURDATE()) AND MONTH(fecha) = MONTH(CURDATE()) "
-                + "AND estado <> 'CANCELADO'";
+                + "AND estado <> 'CANCELADO' AND estado_pago = 'APROBADO'";
         return ejecutarSuma(sql);
     }
 
