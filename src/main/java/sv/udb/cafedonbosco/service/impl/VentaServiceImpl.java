@@ -215,23 +215,51 @@ public class VentaServiceImpl implements VentaService {
             return venta;
         } catch (SQLException e) {
             revertir(conexion);
-            if (venta.getIdempotencyKey() != null && esViolacionDeUnicidad(e)) {
-                Venta yaCreadaPorOtraSolicitud = ventaDAO.buscarPorIdempotencyKey(venta.getIdempotencyKey());
-                if (yaCreadaPorOtraSolicitud != null) {
-                    return yaCreadaPorOtraSolicitud;
-                }
+            Venta yaCreadaPorOtraSolicitud = recuperarPorIdempotenciaSiAplica(venta, e);
+            if (yaCreadaPorOtraSolicitud != null) {
+                return yaCreadaPorOtraSolicitud;
             }
             throw new ErrorInternoException("Error al registrar la venta", e);
         } catch (RuntimeException e) {
             revertir(conexion);
+            // Las llamadas a ventaDAO/inventarioDAO/productoDAO ya envuelven
+            // cualquier SQLException en una excepcion sin marcar (p. ej.
+            // ErrorInternoException) antes de que llegue hasta aqui, asi que
+            // en la practica una violacion de unicidad del idempotency_key
+            // (dos solicitudes concurrentes con la misma clave) se ve como
+            // un RuntimeException, no como el SQLException de mas arriba.
+            // Por eso la recuperacion se intenta en ambos catch.
+            Venta yaCreadaPorOtraSolicitud = recuperarPorIdempotenciaSiAplica(venta, e);
+            if (yaCreadaPorOtraSolicitud != null) {
+                return yaCreadaPorOtraSolicitud;
+            }
             throw e;
         } finally {
             cerrar(conexion);
         }
     }
 
-    private boolean esViolacionDeUnicidad(SQLException e) {
-        return e instanceof SQLIntegrityConstraintViolationException;
+    /**
+     * Si la venta llevaba una clave de idempotencia y el fallo fue por esa
+     * clave duplicada (otra solicitud concurrente ya la registro primero),
+     * devuelve esa venta ya creada en vez de fallar. Recorre toda la
+     * cadena de causas porque el error real puede llegar envuelto en mas
+     * de una excepcion.
+     */
+    private Venta recuperarPorIdempotenciaSiAplica(Venta venta, Throwable error) {
+        if (venta.getIdempotencyKey() == null || !esViolacionDeUnicidad(error)) {
+            return null;
+        }
+        return ventaDAO.buscarPorIdempotencyKey(venta.getIdempotencyKey());
+    }
+
+    private boolean esViolacionDeUnicidad(Throwable error) {
+        for (Throwable actual = error; actual != null; actual = actual.getCause()) {
+            if (actual instanceof SQLIntegrityConstraintViolationException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

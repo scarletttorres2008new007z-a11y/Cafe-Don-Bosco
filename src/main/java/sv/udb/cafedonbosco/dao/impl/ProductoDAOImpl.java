@@ -208,7 +208,12 @@ public class ProductoDAOImpl implements ProductoDAO {
     }
 
     private Producto mapear(ResultSet rs) throws SQLException {
+        // rs.wasNull() refleja la nulidad de la ULTIMA columna leida, asi
+        // que hay que capturarlo justo despues de leer tiempo_preparacion_minutos
+        // y antes de leer cualquier otra columna (imagen, activo, etc.);
+        // si no, siempre termina reflejando si esa otra columna era nula.
         int minutos = rs.getInt("tiempo_preparacion_minutos");
+        boolean minutosEsNulo = rs.wasNull();
         return new Producto(
                 rs.getInt("id"),
                 rs.getInt("categoria_id"),
@@ -216,7 +221,7 @@ public class ProductoDAOImpl implements ProductoDAO {
                 rs.getString("descripcion"),
                 rs.getBigDecimal("precio"),
                 rs.getString("imagen"),
-                rs.wasNull() ? null : minutos,
+                minutosEsNulo ? null : minutos,
                 rs.getBoolean("activo")
         );
     }
