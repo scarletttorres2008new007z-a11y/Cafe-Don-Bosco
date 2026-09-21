@@ -1,8 +1,10 @@
 package sv.udb.cafedonbosco.service.impl;
 
+import sv.udb.cafedonbosco.dao.BitacoraDAO;
 import sv.udb.cafedonbosco.dao.CategoriaDAO;
 import sv.udb.cafedonbosco.dao.InventarioDAO;
 import sv.udb.cafedonbosco.dao.ProductoDAO;
+import sv.udb.cafedonbosco.dao.impl.BitacoraDAOImpl;
 import sv.udb.cafedonbosco.dao.impl.CategoriaDAOImpl;
 import sv.udb.cafedonbosco.dao.impl.InventarioDAOImpl;
 import sv.udb.cafedonbosco.dao.impl.ProductoDAOImpl;
@@ -13,6 +15,7 @@ import sv.udb.cafedonbosco.exception.ErrorInternoException;
 import sv.udb.cafedonbosco.exception.RecursoDuplicadoException;
 import sv.udb.cafedonbosco.exception.RecursoNoEncontradoException;
 import sv.udb.cafedonbosco.exception.ValidacionException;
+import sv.udb.cafedonbosco.model.Bitacora;
 import sv.udb.cafedonbosco.model.Categoria;
 import sv.udb.cafedonbosco.model.Inventario;
 import sv.udb.cafedonbosco.model.Producto;
@@ -34,11 +37,13 @@ public class ProductoServiceImpl implements ProductoService {
     private final ProductoDAO productoDAO;
     private final CategoriaDAO categoriaDAO;
     private final InventarioDAO inventarioDAO;
+    private final BitacoraDAO bitacoraDAO;
 
     public ProductoServiceImpl() {
         this.productoDAO = new ProductoDAOImpl();
         this.categoriaDAO = new CategoriaDAOImpl();
         this.inventarioDAO = new InventarioDAOImpl();
+        this.bitacoraDAO = new BitacoraDAOImpl();
     }
 
     @Override
@@ -106,7 +111,7 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     @Override
-    public ProductoAdminResponseDTO crear(ProductoRequestDTO datos) {
+    public ProductoAdminResponseDTO crear(ProductoRequestDTO datos, int usuarioAdminId) {
         validar(datos);
         Categoria categoria = categoriaDAO.buscarPorId(datos.getCategoriaId());
         if (categoria == null) {
@@ -142,6 +147,9 @@ public class ProductoServiceImpl implements ProductoService {
             Inventario inventario = new Inventario(null, producto.getId(), stockInicial, stockMinimo);
             inventarioDAO.crear(conexion, inventario);
 
+            bitacoraDAO.registrar(conexion, new Bitacora(usuarioAdminId, "CREAR_PRODUCTO", "PRODUCTO",
+                    producto.getId(), "Producto \"" + producto.getNombre() + "\" creado con stock inicial " + stockInicial));
+
             conexion.commit();
         } catch (SQLException e) {
             revertir(conexion);
@@ -154,7 +162,7 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     @Override
-    public ProductoAdminResponseDTO actualizar(int id, ProductoRequestDTO datos) {
+    public ProductoAdminResponseDTO actualizar(int id, ProductoRequestDTO datos, int usuarioAdminId) {
         validar(datos);
         Producto existente = productoDAO.buscarPorId(id);
         if (existente == null) {
@@ -193,6 +201,9 @@ public class ProductoServiceImpl implements ProductoService {
                 inventarioDAO.actualizarStockMinimo(conexion, id, datos.getStockMinimo());
             }
 
+            bitacoraDAO.registrar(conexion, new Bitacora(usuarioAdminId, "ACTUALIZAR_PRODUCTO", "PRODUCTO",
+                    id, "Producto \"" + existente.getNombre() + "\" actualizado"));
+
             conexion.commit();
         } catch (SQLException e) {
             revertir(conexion);
@@ -205,11 +216,24 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     @Override
-    public void cambiarEstado(int id, boolean activo) {
-        if (productoDAO.buscarPorId(id) == null) {
+    public void cambiarEstado(int id, boolean activo, int usuarioAdminId) {
+        Producto producto = productoDAO.buscarPorId(id);
+        if (producto == null) {
             throw new RecursoNoEncontradoException("El producto solicitado no existe.");
         }
         productoDAO.cambiarEstado(id, activo);
+
+        Connection conexion = null;
+        try {
+            conexion = ConexionBD.obtenerConexion();
+            bitacoraDAO.registrar(conexion, new Bitacora(usuarioAdminId,
+                    activo ? "ACTIVAR_PRODUCTO" : "DESACTIVAR_PRODUCTO", "PRODUCTO", id,
+                    "Producto \"" + producto.getNombre() + "\" " + (activo ? "activado" : "desactivado")));
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al registrar en la bitacora el cambio de estado del producto", e);
+        } finally {
+            cerrar(conexion);
+        }
     }
 
     private void validar(ProductoRequestDTO datos) {

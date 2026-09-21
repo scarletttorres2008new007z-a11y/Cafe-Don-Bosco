@@ -82,6 +82,21 @@ public class UsuarioDAOImpl implements UsuarioDAO {
         }
     }
 
+    @Override
+    public void actualizarPerfil(Usuario usuario) {
+        String sql = "UPDATE usuario SET nombre = ?, apellido = ?, correo = ? WHERE id = ?";
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setString(1, usuario.getNombre());
+            stmt.setString(2, usuario.getApellido());
+            stmt.setString(3, usuario.getCorreo());
+            stmt.setInt(4, usuario.getId());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al actualizar el perfil del usuario", e);
+        }
+    }
+
     private Usuario mapear(ResultSet rs) throws SQLException {
         return new Usuario(
                 rs.getInt("id"),

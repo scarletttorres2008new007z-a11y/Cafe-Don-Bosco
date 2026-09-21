@@ -2,33 +2,45 @@ package sv.udb.cafedonbosco.service.impl;
 
 import sv.udb.cafedonbosco.dao.BitacoraDAO;
 import sv.udb.cafedonbosco.dao.InventarioDAO;
+import sv.udb.cafedonbosco.dao.ProductoDAO;
+import sv.udb.cafedonbosco.dao.UsuarioDAO;
 import sv.udb.cafedonbosco.dao.impl.BitacoraDAOImpl;
 import sv.udb.cafedonbosco.dao.impl.InventarioDAOImpl;
+import sv.udb.cafedonbosco.dao.impl.ProductoDAOImpl;
+import sv.udb.cafedonbosco.dao.impl.UsuarioDAOImpl;
 import sv.udb.cafedonbosco.dto.request.InventarioAjusteRequestDTO;
+import sv.udb.cafedonbosco.dto.response.MovimientoInventarioResponseDTO;
 import sv.udb.cafedonbosco.dto.response.ProductoAdminResponseDTO;
 import sv.udb.cafedonbosco.exception.ErrorInternoException;
 import sv.udb.cafedonbosco.exception.RecursoNoEncontradoException;
 import sv.udb.cafedonbosco.exception.ValidacionException;
 import sv.udb.cafedonbosco.model.Bitacora;
 import sv.udb.cafedonbosco.model.MovimientoInventario;
+import sv.udb.cafedonbosco.model.Producto;
 import sv.udb.cafedonbosco.model.TipoMovimiento;
+import sv.udb.cafedonbosco.model.Usuario;
 import sv.udb.cafedonbosco.service.InventarioService;
 import sv.udb.cafedonbosco.service.ProductoService;
 import sv.udb.cafedonbosco.util.ConexionBD;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class InventarioServiceImpl implements InventarioService {
 
     private final InventarioDAO inventarioDAO;
     private final BitacoraDAO bitacoraDAO;
+    private final ProductoDAO productoDAO;
+    private final UsuarioDAO usuarioDAO;
     private final ProductoService productoService;
 
     public InventarioServiceImpl() {
         this.inventarioDAO = new InventarioDAOImpl();
         this.bitacoraDAO = new BitacoraDAOImpl();
+        this.productoDAO = new ProductoDAOImpl();
+        this.usuarioDAO = new UsuarioDAOImpl();
         this.productoService = new ProductoServiceImpl();
     }
 
@@ -88,6 +100,37 @@ public class InventarioServiceImpl implements InventarioService {
         } finally {
             cerrar(conexion);
         }
+    }
+
+    @Override
+    public List<MovimientoInventarioResponseDTO> listarMovimientos(Integer productoId, int limite) {
+        List<MovimientoInventarioResponseDTO> resultado = new ArrayList<>();
+        for (MovimientoInventario movimiento : inventarioDAO.listarMovimientos(productoId, limite)) {
+            resultado.add(aResponseDTO(movimiento));
+        }
+        return resultado;
+    }
+
+    private MovimientoInventarioResponseDTO aResponseDTO(MovimientoInventario movimiento) {
+        MovimientoInventarioResponseDTO dto = new MovimientoInventarioResponseDTO();
+        dto.setId(movimiento.getId());
+        dto.setProductoId(movimiento.getProductoId());
+        Producto producto = productoDAO.buscarPorId(movimiento.getProductoId());
+        dto.setNombreProducto(producto != null ? producto.getNombre() : null);
+        dto.setTipoMovimiento(movimiento.getTipoMovimiento());
+        dto.setCantidad(movimiento.getCantidad());
+        dto.setStockAnterior(movimiento.getStockAnterior());
+        dto.setStockNuevo(movimiento.getStockNuevo());
+        dto.setMotivo(movimiento.getMotivo());
+        dto.setVentaId(movimiento.getVentaId());
+        dto.setCompraId(movimiento.getCompraId());
+        dto.setUsuarioId(movimiento.getUsuarioId());
+        if (movimiento.getUsuarioId() != null) {
+            Usuario usuario = usuarioDAO.buscarPorId(movimiento.getUsuarioId());
+            dto.setUsuarioNombre(usuario != null ? usuario.getNombre() : null);
+        }
+        dto.setFecha(movimiento.getFecha());
+        return dto;
     }
 
     private void revertir(Connection conexion) {

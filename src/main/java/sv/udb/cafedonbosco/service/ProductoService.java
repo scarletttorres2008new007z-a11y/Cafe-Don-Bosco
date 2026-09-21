@@ -18,9 +18,9 @@ public interface ProductoService {
 
     ProductoAdminResponseDTO obtenerDetalleAdmin(int id);
 
-    ProductoAdminResponseDTO crear(ProductoRequestDTO datos);
+    ProductoAdminResponseDTO crear(ProductoRequestDTO datos, int usuarioAdminId);
 
-    ProductoAdminResponseDTO actualizar(int id, ProductoRequestDTO datos);
+    ProductoAdminResponseDTO actualizar(int id, ProductoRequestDTO datos, int usuarioAdminId);
 
-    void cambiarEstado(int id, boolean activo);
+    void cambiarEstado(int id, boolean activo, int usuarioAdminId);
 }

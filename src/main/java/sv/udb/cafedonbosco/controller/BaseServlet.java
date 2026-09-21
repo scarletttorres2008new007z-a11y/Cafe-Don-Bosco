@@ -1,6 +1,8 @@
 package sv.udb.cafedonbosco.controller;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import sv.udb.cafedonbosco.exception.AppException;
 import sv.udb.cafedonbosco.util.JsonUtil;
@@ -18,6 +20,27 @@ import java.util.logging.Logger;
 public abstract class BaseServlet extends HttpServlet {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
+
+    /**
+     * HttpServlet no reconoce PATCH de forma nativa (solo GET/POST/PUT/
+     * DELETE/HEAD/OPTIONS/TRACE en service()), asi que se intercepta aqui
+     * para que cualquier servlet pueda sobreescribir doPatch igual que ya
+     * hace con doGet/doPost/doPut.
+     */
+    @Override
+    protected void service(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        if ("PATCH".equalsIgnoreCase(request.getMethod())) {
+            doPatch(request, response);
+        } else {
+            super.service(request, response);
+        }
+    }
+
+    protected void doPatch(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+    }
 
     protected void manejarError(HttpServletResponse response, Exception excepcion) throws IOException {
         if (excepcion instanceof AppException appException) {
