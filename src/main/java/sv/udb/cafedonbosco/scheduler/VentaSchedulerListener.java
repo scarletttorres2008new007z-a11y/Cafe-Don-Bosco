@@ -3,14 +3,14 @@ package sv.udb.cafedonbosco.scheduler;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sv.udb.cafedonbosco.service.VentaService;
 import sv.udb.cafedonbosco.service.impl.VentaServiceImpl;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Arranca junto con la aplicacion un hilo en segundo plano que revisa
@@ -23,7 +23,7 @@ import java.util.logging.Logger;
 @WebListener
 public class VentaSchedulerListener implements ServletContextListener {
 
-    private static final Logger LOG = Logger.getLogger(VentaSchedulerListener.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(VentaSchedulerListener.class);
     private static final long INTERVALO_SEGUNDOS = 30;
 
     private ScheduledExecutorService executor;
@@ -40,13 +40,13 @@ public class VentaSchedulerListener implements ServletContextListener {
             try {
                 int actualizadas = ventaService.procesarPreparacionesVencidas();
                 if (actualizadas > 0) {
-                    LOG.info(() -> actualizadas + " pedido(s) pasaron automaticamente de EN_PREPARACION a LISTO.");
+                    LOG.info("{} pedido(s) pasaron automaticamente de EN_PREPARACION a LISTO.", actualizadas);
                 }
             } catch (RuntimeException e) {
-                LOG.log(Level.SEVERE, "Error al procesar las preparaciones vencidas", e);
+                LOG.error("Error al procesar las preparaciones vencidas", e);
             }
         }, INTERVALO_SEGUNDOS, INTERVALO_SEGUNDOS, TimeUnit.SECONDS);
-        LOG.info("Scheduler de estados de venta iniciado (cada " + INTERVALO_SEGUNDOS + " s).");
+        LOG.info("Scheduler de estados de venta iniciado (cada {} s).", INTERVALO_SEGUNDOS);
     }
 
     @Override

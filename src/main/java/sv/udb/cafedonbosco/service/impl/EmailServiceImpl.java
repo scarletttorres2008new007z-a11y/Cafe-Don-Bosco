@@ -12,13 +12,13 @@ import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import jakarta.mail.util.ByteArrayDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sv.udb.cafedonbosco.service.EmailService;
 import sv.udb.cafedonbosco.util.EmailExecutor;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Configuracion por variables de entorno (nunca credenciales en el
@@ -30,7 +30,7 @@ import java.util.logging.Logger;
  */
 public class EmailServiceImpl implements EmailService {
 
-    private static final Logger LOG = Logger.getLogger(EmailServiceImpl.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(EmailServiceImpl.class);
 
     private static final String HOST = System.getenv().getOrDefault("SMTP_HOST", "");
     private static final String PUERTO = System.getenv().getOrDefault("SMTP_PUERTO", "587");
@@ -45,8 +45,7 @@ public class EmailServiceImpl implements EmailService {
 
     private void enviarAhora(String destinatario, byte[] pdfTicket, String numeroTicket) {
         if (HOST.isBlank()) {
-            LOG.warning(() -> "SMTP_HOST no esta configurado; se omite el envio del ticket #"
-                    + numeroTicket + " a " + destinatario);
+            LOG.warn("SMTP_HOST no esta configurado; se omite el envio del ticket #{} a {}", numeroTicket, destinatario);
             return;
         }
         try {
@@ -77,9 +76,9 @@ public class EmailServiceImpl implements EmailService {
             mensaje.setContent(contenido);
 
             Transport.send(mensaje);
-            LOG.info(() -> "Ticket #" + numeroTicket + " enviado por correo a " + destinatario);
+            LOG.info("Ticket #{} enviado por correo a {}", numeroTicket, destinatario);
         } catch (MessagingException | UnsupportedEncodingException e) {
-            LOG.log(Level.SEVERE, "Error al enviar el ticket #" + numeroTicket + " por correo a " + destinatario, e);
+            LOG.error("Error al enviar el ticket #{} por correo a {}", numeroTicket, destinatario, e);
         }
     }
 

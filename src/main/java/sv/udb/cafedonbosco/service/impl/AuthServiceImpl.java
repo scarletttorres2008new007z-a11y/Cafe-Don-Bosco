@@ -20,7 +20,12 @@ public class AuthServiceImpl implements AuthService {
     private final UsuarioDAO usuarioDAO;
 
     public AuthServiceImpl() {
-        this.usuarioDAO = new UsuarioDAOImpl();
+        this(new UsuarioDAOImpl());
+    }
+
+    /** Permite inyectar un UsuarioDAO de prueba (Mockito) sin tocar una base de datos real. */
+    public AuthServiceImpl(UsuarioDAO usuarioDAO) {
+        this.usuarioDAO = usuarioDAO;
     }
 
     @Override

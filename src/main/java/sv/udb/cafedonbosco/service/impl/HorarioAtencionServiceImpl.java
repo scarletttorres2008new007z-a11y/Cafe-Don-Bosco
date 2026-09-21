@@ -28,7 +28,12 @@ public class HorarioAtencionServiceImpl implements HorarioAtencionService {
     private final HorarioAtencionDAO horarioDAO;
 
     public HorarioAtencionServiceImpl() {
-        this.horarioDAO = new HorarioAtencionDAOImpl();
+        this(new HorarioAtencionDAOImpl());
+    }
+
+    /** Permite inyectar un HorarioAtencionDAO de prueba (Mockito) sin tocar una base de datos real. */
+    public HorarioAtencionServiceImpl(HorarioAtencionDAO horarioDAO) {
+        this.horarioDAO = horarioDAO;
     }
 
     @Override

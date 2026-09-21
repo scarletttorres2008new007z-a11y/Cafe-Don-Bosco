@@ -4,12 +4,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sv.udb.cafedonbosco.exception.AppException;
 import sv.udb.cafedonbosco.util.JsonUtil;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Centraliza el manejo de errores de todos los servlets: una AppException
@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  */
 public abstract class BaseServlet extends HttpServlet {
 
-    protected final Logger logger = Logger.getLogger(getClass().getName());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * HttpServlet no reconoce PATCH de forma nativa (solo GET/POST/PUT/
@@ -45,12 +45,12 @@ public abstract class BaseServlet extends HttpServlet {
     protected void manejarError(HttpServletResponse response, Exception excepcion) throws IOException {
         if (excepcion instanceof AppException appException) {
             if (appException.getCause() != null) {
-                logger.log(Level.WARNING, "AppException con causa: " + appException.getMessage(), appException.getCause());
+                logger.warn("AppException con causa: {}", appException.getMessage(), appException.getCause());
             }
             JsonUtil.error(response, appException.getCodigoHttp(), appException.getMessage());
             return;
         }
-        logger.log(Level.SEVERE, "Error inesperado en el servlet", excepcion);
+        logger.error("Error inesperado en el servlet", excepcion);
         JsonUtil.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                 "Ocurrio un error inesperado. Intenta de nuevo mas tarde.");
     }

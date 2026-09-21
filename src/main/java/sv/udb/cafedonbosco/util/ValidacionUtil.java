@@ -4,8 +4,12 @@ import java.util.regex.Pattern;
 
 public final class ValidacionUtil {
 
+    // El dominio admite cualquier cantidad de subdominios antes del TLD
+    // (ej. usuario@mail.udb.edu.sv); una version anterior de este patron
+    // solo aceptaba un dominio con un unico punto y rechazaba correos
+    // institucionales reales con subdominios.
     private static final Pattern PATRON_CORREO =
-            Pattern.compile("^[\\w.+-]+@[\\w-]+\\.[a-zA-Z]{2,}$");
+            Pattern.compile("^[\\w.+-]+@[\\w-]+(\\.[\\w-]+)*\\.[a-zA-Z]{2,}$");
 
     private static final Pattern PATRON_TELEFONO =
             Pattern.compile("^[+]?[0-9\\s-]{7,20}$");

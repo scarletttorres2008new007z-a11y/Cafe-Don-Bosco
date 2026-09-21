@@ -26,8 +26,13 @@ public class CarritoServiceImpl implements CarritoService {
     private final InventarioDAO inventarioDAO;
 
     public CarritoServiceImpl() {
-        this.productoDAO = new ProductoDAOImpl();
-        this.inventarioDAO = new InventarioDAOImpl();
+        this(new ProductoDAOImpl(), new InventarioDAOImpl());
+    }
+
+    /** Permite inyectar DAOs de prueba (Mockito) sin tocar una base de datos real. */
+    public CarritoServiceImpl(ProductoDAO productoDAO, InventarioDAO inventarioDAO) {
+        this.productoDAO = productoDAO;
+        this.inventarioDAO = inventarioDAO;
     }
 
     @Override

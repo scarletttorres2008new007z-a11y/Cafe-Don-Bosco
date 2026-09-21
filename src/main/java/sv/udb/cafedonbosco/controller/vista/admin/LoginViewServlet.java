@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sv.udb.cafedonbosco.dto.response.UsuarioResponseDTO;
 import sv.udb.cafedonbosco.exception.AppException;
 import sv.udb.cafedonbosco.model.Rol;
@@ -16,8 +18,6 @@ import sv.udb.cafedonbosco.util.Constantes;
 import sv.udb.cafedonbosco.util.SessionUtil;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Login exclusivo del panel de administrador. El consumidor nunca pasa
@@ -29,7 +29,7 @@ import java.util.logging.Logger;
 public class LoginViewServlet extends HttpServlet {
 
     private static final String VISTA = "/WEB-INF/views/admin/login.jsp";
-    private final Logger logger = Logger.getLogger(getClass().getName());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final AuthService authService = new AuthServiceImpl();
 
     @Override
@@ -59,10 +59,10 @@ public class LoginViewServlet extends HttpServlet {
             sesion.setAttribute(Constantes.SESSION_USUARIO, usuario);
             response.sendRedirect(request.getContextPath() + "/admin/dashboard");
         } catch (AppException e) {
-            logger.log(Level.WARNING, "Login de administrador rechazado: " + e.getMessage(), e.getCause());
+            logger.warn("Login de administrador rechazado: {}", e.getMessage(), e.getCause());
             mostrarFormulario(request, response, e.getMessage());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error inesperado al iniciar sesion", e);
+            logger.error("Error inesperado al iniciar sesion", e);
             mostrarFormulario(request, response, "Ocurrio un error inesperado. Intenta de nuevo.");
         }
     }
