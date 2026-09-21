@@ -1,24 +1,34 @@
 package sv.udb.cafedonbosco.service.impl;
 
+import sv.udb.cafedonbosco.dao.BitacoraDAO;
 import sv.udb.cafedonbosco.dao.InventarioDAO;
+import sv.udb.cafedonbosco.dao.impl.BitacoraDAOImpl;
 import sv.udb.cafedonbosco.dao.impl.InventarioDAOImpl;
 import sv.udb.cafedonbosco.dto.request.InventarioAjusteRequestDTO;
 import sv.udb.cafedonbosco.dto.response.ProductoAdminResponseDTO;
+import sv.udb.cafedonbosco.exception.ErrorInternoException;
 import sv.udb.cafedonbosco.exception.RecursoNoEncontradoException;
 import sv.udb.cafedonbosco.exception.ValidacionException;
-import sv.udb.cafedonbosco.model.Inventario;
+import sv.udb.cafedonbosco.model.Bitacora;
+import sv.udb.cafedonbosco.model.MovimientoInventario;
+import sv.udb.cafedonbosco.model.TipoMovimiento;
 import sv.udb.cafedonbosco.service.InventarioService;
 import sv.udb.cafedonbosco.service.ProductoService;
+import sv.udb.cafedonbosco.util.ConexionBD;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 
 public class InventarioServiceImpl implements InventarioService {
 
     private final InventarioDAO inventarioDAO;
+    private final BitacoraDAO bitacoraDAO;
     private final ProductoService productoService;
 
     public InventarioServiceImpl() {
         this.inventarioDAO = new InventarioDAOImpl();
+        this.bitacoraDAO = new BitacoraDAOImpl();
         this.productoService = new ProductoServiceImpl();
     }
 
@@ -28,17 +38,75 @@ public class InventarioServiceImpl implements InventarioService {
     }
 
     @Override
-    public void ajustar(InventarioAjusteRequestDTO datos) {
+    public void ajustar(InventarioAjusteRequestDTO datos, int usuarioAdminId) {
         if (datos == null || datos.getProductoId() == null || datos.getCantidad() == null || datos.getCantidad() < 0) {
             throw new ValidacionException("Debes indicar el producto y una cantidad valida (0 o mas).");
         }
-        Inventario inventario = inventarioDAO.buscarPorProducto(datos.getProductoId());
-        if (inventario == null) {
-            throw new RecursoNoEncontradoException("El producto no tiene un registro de inventario.");
+        if (datos.getStockMinimo() != null && datos.getStockMinimo() < 0) {
+            throw new ValidacionException("El stock minimo no puede ser negativo.");
         }
-        inventarioDAO.fijarCantidad(datos.getProductoId(), datos.getCantidad());
-        if (datos.getStockMinimo() != null && datos.getStockMinimo() >= 0) {
-            inventarioDAO.actualizarStockMinimo(datos.getProductoId(), datos.getStockMinimo());
+
+        Connection conexion = null;
+        try {
+            conexion = ConexionBD.obtenerConexion();
+            conexion.setAutoCommit(false);
+
+            if (!inventarioDAO.existeParaProducto(conexion, datos.getProductoId())) {
+                throw new RecursoNoEncontradoException("El producto no tiene un registro de inventario.");
+            }
+
+            int stockAnterior = inventarioDAO.obtenerCantidadActual(conexion, datos.getProductoId());
+            inventarioDAO.fijarCantidad(conexion, datos.getProductoId(), datos.getCantidad());
+
+            if (datos.getCantidad() != stockAnterior) {
+                MovimientoInventario movimiento = new MovimientoInventario();
+                movimiento.setProductoId(datos.getProductoId());
+                movimiento.setTipoMovimiento(TipoMovimiento.AJUSTE);
+                movimiento.setCantidad(Math.abs(datos.getCantidad() - stockAnterior));
+                movimiento.setStockAnterior(stockAnterior);
+                movimiento.setStockNuevo(datos.getCantidad());
+                movimiento.setMotivo("Ajuste manual de inventario");
+                movimiento.setUsuarioId(usuarioAdminId);
+                inventarioDAO.registrarMovimiento(conexion, movimiento);
+            }
+
+            if (datos.getStockMinimo() != null) {
+                inventarioDAO.actualizarStockMinimo(conexion, datos.getProductoId(), datos.getStockMinimo());
+            }
+
+            bitacoraDAO.registrar(conexion, new Bitacora(usuarioAdminId, "AJUSTAR_INVENTARIO", "PRODUCTO",
+                    datos.getProductoId(), "Cantidad fijada en " + datos.getCantidad()
+                    + (datos.getStockMinimo() != null ? ", stock minimo en " + datos.getStockMinimo() : "")));
+
+            conexion.commit();
+        } catch (SQLException e) {
+            revertir(conexion);
+            throw new ErrorInternoException("Error al ajustar el inventario", e);
+        } catch (RuntimeException e) {
+            revertir(conexion);
+            throw e;
+        } finally {
+            cerrar(conexion);
+        }
+    }
+
+    private void revertir(Connection conexion) {
+        if (conexion != null) {
+            try {
+                conexion.rollback();
+            } catch (SQLException ignorada) {
+                // La conexion se cerrara de todas formas en el bloque finally.
+            }
+        }
+    }
+
+    private void cerrar(Connection conexion) {
+        if (conexion != null) {
+            try {
+                conexion.close();
+            } catch (SQLException ignorada) {
+                // No hay una accion util adicional si el cierre falla.
+            }
         }
     }
 }

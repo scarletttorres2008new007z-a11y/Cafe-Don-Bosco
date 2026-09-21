@@ -5,6 +5,7 @@ import sv.udb.cafedonbosco.dao.impl.UsuarioDAOImpl;
 import sv.udb.cafedonbosco.dto.request.RegistroConsumidorDTO;
 import sv.udb.cafedonbosco.dto.response.UsuarioResponseDTO;
 import sv.udb.cafedonbosco.exception.CredencialesInvalidasException;
+import sv.udb.cafedonbosco.exception.RecursoDuplicadoException;
 import sv.udb.cafedonbosco.exception.ValidacionException;
 import sv.udb.cafedonbosco.model.Rol;
 import sv.udb.cafedonbosco.model.Usuario;
@@ -51,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
             throw new ValidacionException("Revisa los datos del registro: nombre, apellido, correo y contrasena (minimo 6 caracteres).");
         }
         if (usuarioDAO.existeCorreo(datos.getCorreo())) {
-            throw new ValidacionException("Ya existe una cuenta registrada con ese correo.");
+            throw new RecursoDuplicadoException("Ya existe una cuenta registrada con ese correo.");
         }
 
         Usuario usuario = new Usuario();

@@ -5,10 +5,17 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * proveedorNombre es una fotografia del nombre del proveedor al momento
+ * de la compra (igual que detalle_venta.nombre_producto): si el
+ * proveedor cambia de nombre despues, el historial de compras no debe
+ * cambiar retroactivamente.
+ */
 public class Compra {
 
     private Integer id;
-    private String proveedor;
+    private Integer proveedorId;
+    private String proveedorNombre;
     private Integer usuarioId;
     private BigDecimal total;
     private LocalDateTime fecha;
@@ -25,12 +32,20 @@ public class Compra {
         this.id = id;
     }
 
-    public String getProveedor() {
-        return proveedor;
+    public Integer getProveedorId() {
+        return proveedorId;
     }
 
-    public void setProveedor(String proveedor) {
-        this.proveedor = proveedor;
+    public void setProveedorId(Integer proveedorId) {
+        this.proveedorId = proveedorId;
+    }
+
+    public String getProveedorNombre() {
+        return proveedorNombre;
+    }
+
+    public void setProveedorNombre(String proveedorNombre) {
+        this.proveedorNombre = proveedorNombre;
     }
 
     public Integer getUsuarioId() {

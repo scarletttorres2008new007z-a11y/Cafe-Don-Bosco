@@ -10,22 +10,32 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ProductoDAOImpl implements ProductoDAO {
 
     private static final String COLUMNAS =
-            "id, categoria_id, nombre, descripcion, precio, imagen, tiempo_preparacion, activo";
+            "id, categoria_id, nombre, descripcion, precio, imagen, tiempo_preparacion_minutos, activo";
+
+    private static final String COLUMNAS_P =
+            "p.id, p.categoria_id, p.nombre, p.descripcion, p.precio, p.imagen, "
+                    + "p.tiempo_preparacion_minutos, p.activo";
 
     @Override
     public List<Producto> listarActivos() {
-        return listar("SELECT " + COLUMNAS + " FROM producto WHERE activo = TRUE ORDER BY nombre");
+        String sql = "SELECT " + COLUMNAS_P + " FROM producto p "
+                + "JOIN categoria c ON c.id = p.categoria_id "
+                + "WHERE p.activo = TRUE AND c.activo = TRUE ORDER BY p.nombre";
+        return listar(sql);
     }
 
     @Override
     public List<Producto> listarActivosPorCategoria(int categoriaId) {
-        String sql = "SELECT " + COLUMNAS + " FROM producto WHERE activo = TRUE AND categoria_id = ? ORDER BY nombre";
+        String sql = "SELECT " + COLUMNAS_P + " FROM producto p "
+                + "JOIN categoria c ON c.id = p.categoria_id "
+                + "WHERE p.activo = TRUE AND c.activo = TRUE AND p.categoria_id = ? ORDER BY p.nombre";
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement stmt = conexion.prepareStatement(sql)) {
             stmt.setInt(1, categoriaId);
@@ -36,17 +46,48 @@ public class ProductoDAOImpl implements ProductoDAO {
     }
 
     @Override
-    public List<Producto> buscarActivosPorNombre(String texto) {
-        String sql = "SELECT " + COLUMNAS + " FROM producto "
-                + "WHERE activo = TRUE AND (nombre LIKE ? OR descripcion LIKE ?) ORDER BY nombre";
+    public List<Producto> buscarCatalogo(Integer categoriaId, String busqueda, String orden) {
+        boolean porPopularidad = "popularidad".equals(orden);
+
+        StringBuilder sql = new StringBuilder("SELECT ").append(COLUMNAS_P);
+        if (porPopularidad) {
+            sql.append(", COALESCE(SUM(dv.cantidad), 0) AS vendidos ");
+        }
+        sql.append(" FROM producto p JOIN categoria c ON c.id = p.categoria_id ");
+        if (porPopularidad) {
+            sql.append("LEFT JOIN detalle_venta dv ON dv.producto_id = p.id ");
+        }
+        sql.append("WHERE p.activo = TRUE AND c.activo = TRUE ");
+        if (categoriaId != null) {
+            sql.append("AND p.categoria_id = ? ");
+        }
+        if (busqueda != null && !busqueda.isBlank()) {
+            sql.append("AND (p.nombre LIKE ? OR p.descripcion LIKE ?) ");
+        }
+        if (porPopularidad) {
+            sql.append("GROUP BY ").append(COLUMNAS_P).append(" ORDER BY vendidos DESC, p.nombre ASC");
+        } else if ("precio_menor".equals(orden)) {
+            sql.append("ORDER BY p.precio ASC");
+        } else if ("precio_mayor".equals(orden)) {
+            sql.append("ORDER BY p.precio DESC");
+        } else {
+            sql.append("ORDER BY p.nombre ASC");
+        }
+
         try (Connection conexion = ConexionBD.obtenerConexion();
-             PreparedStatement stmt = conexion.prepareStatement(sql)) {
-            String comodin = "%" + texto + "%";
-            stmt.setString(1, comodin);
-            stmt.setString(2, comodin);
+             PreparedStatement stmt = conexion.prepareStatement(sql.toString())) {
+            int indice = 1;
+            if (categoriaId != null) {
+                stmt.setInt(indice++, categoriaId);
+            }
+            if (busqueda != null && !busqueda.isBlank()) {
+                String comodin = "%" + busqueda.trim() + "%";
+                stmt.setString(indice++, comodin);
+                stmt.setString(indice, comodin);
+            }
             return ejecutarListado(stmt);
         } catch (SQLException e) {
-            throw new ErrorInternoException("Error al buscar productos por nombre", e);
+            throw new ErrorInternoException("Error al buscar el catalogo de productos", e);
         }
     }
 
@@ -91,7 +132,7 @@ public class ProductoDAOImpl implements ProductoDAO {
     @Override
     public Producto crear(Connection conexion, Producto producto) {
         String sql = "INSERT INTO producto "
-                + "(categoria_id, nombre, descripcion, precio, imagen, tiempo_preparacion, activo) "
+                + "(categoria_id, nombre, descripcion, precio, imagen, tiempo_preparacion_minutos, activo) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             enlazarCampos(stmt, producto);
@@ -108,11 +149,10 @@ public class ProductoDAOImpl implements ProductoDAO {
     }
 
     @Override
-    public void actualizar(Producto producto) {
+    public void actualizar(Connection conexion, Producto producto) {
         String sql = "UPDATE producto SET categoria_id = ?, nombre = ?, descripcion = ?, "
-                + "precio = ?, imagen = ?, tiempo_preparacion = ?, activo = ? WHERE id = ?";
-        try (Connection conexion = ConexionBD.obtenerConexion();
-             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+                + "precio = ?, imagen = ?, tiempo_preparacion_minutos = ?, activo = ? WHERE id = ?";
+        try (PreparedStatement stmt = conexion.prepareStatement(sql)) {
             enlazarCampos(stmt, producto);
             stmt.setInt(8, producto.getId());
             stmt.executeUpdate();
@@ -134,17 +174,41 @@ public class ProductoDAOImpl implements ProductoDAO {
         }
     }
 
+    @Override
+    public boolean existeNombreEnCategoria(int categoriaId, String nombre, Integer idAExcluir) {
+        String sql = "SELECT 1 FROM producto WHERE categoria_id = ? AND nombre = ?"
+                + (idAExcluir != null ? " AND id <> ?" : "");
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setInt(1, categoriaId);
+            stmt.setString(2, nombre);
+            if (idAExcluir != null) {
+                stmt.setInt(3, idAExcluir);
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al verificar el nombre del producto", e);
+        }
+    }
+
     private void enlazarCampos(PreparedStatement stmt, Producto producto) throws SQLException {
         stmt.setInt(1, producto.getCategoriaId());
         stmt.setString(2, producto.getNombre());
         stmt.setString(3, producto.getDescripcion());
         stmt.setBigDecimal(4, producto.getPrecio());
         stmt.setString(5, producto.getImagen());
-        stmt.setString(6, producto.getTiempoPreparacion());
+        if (producto.getTiempoPreparacionMinutos() != null) {
+            stmt.setInt(6, producto.getTiempoPreparacionMinutos());
+        } else {
+            stmt.setNull(6, Types.INTEGER);
+        }
         stmt.setBoolean(7, Boolean.TRUE.equals(producto.getActivo()));
     }
 
     private Producto mapear(ResultSet rs) throws SQLException {
+        int minutos = rs.getInt("tiempo_preparacion_minutos");
         return new Producto(
                 rs.getInt("id"),
                 rs.getInt("categoria_id"),
@@ -152,7 +216,7 @@ public class ProductoDAOImpl implements ProductoDAO {
                 rs.getString("descripcion"),
                 rs.getBigDecimal("precio"),
                 rs.getString("imagen"),
-                rs.getString("tiempo_preparacion"),
+                rs.wasNull() ? null : minutos,
                 rs.getBoolean("activo")
         );
     }

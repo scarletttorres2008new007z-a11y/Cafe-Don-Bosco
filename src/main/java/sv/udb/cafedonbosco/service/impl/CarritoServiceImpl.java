@@ -16,6 +16,7 @@ import sv.udb.cafedonbosco.util.ValidacionUtil;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.List;
 
 public class CarritoServiceImpl implements CarritoService {
 
@@ -31,7 +32,12 @@ public class CarritoServiceImpl implements CarritoService {
 
     @Override
     public void agregarProducto(Carrito carrito, int productoId, int cantidad) {
-        Producto producto = validarProductoDisponible(productoId, cantidad);
+        if (!ValidacionUtil.esCantidadValida(cantidad)) {
+            throw new ValidacionException("La cantidad debe ser mayor a 0.");
+        }
+        CarritoItem existente = carrito.getItems().get(productoId);
+        int cantidadTotalDeseada = (existente != null ? existente.getCantidad() : 0) + cantidad;
+        Producto producto = validarProductoDisponible(productoId, cantidadTotalDeseada);
         carrito.agregarProducto(new CarritoItem(
                 producto.getId(), producto.getNombre(), producto.getPrecio(), cantidad, producto.getImagen()
         ));
@@ -58,6 +64,7 @@ public class CarritoServiceImpl implements CarritoService {
 
     @Override
     public CarritoResponseDTO obtenerResumen(Carrito carrito) {
+        resincronizarCarrito(carrito);
         BigDecimal subtotal = carrito.calcularSubtotal();
         BigDecimal envio = BigDecimal.ZERO;
         return new CarritoResponseDTO(
@@ -67,6 +74,40 @@ public class CarritoServiceImpl implements CarritoService {
                 envio,
                 subtotal.add(envio)
         );
+    }
+
+    /**
+     * Antes de mostrar el carrito se vuelve a leer cada producto contra la
+     * BD: si dejo de existir o quedo inactivo se quita del carrito, si el
+     * precio cambio se actualiza (el precio guardado al agregarlo puede
+     * quedar obsoleto) y si la cantidad guardada ya no cabe en el stock
+     * disponible se recorta. El checkout siempre vuelve a validar todo
+     * esto dentro de su propia transaccion, pero esto evita que el
+     * cliente vea un total distinto al que realmente se le cobrara.
+     */
+    private void resincronizarCarrito(Carrito carrito) {
+        List<Integer> aEliminar = new ArrayList<>();
+        for (CarritoItem item : carrito.getItems().values()) {
+            Producto producto = productoDAO.buscarPorId(item.getProductoId());
+            if (producto == null || !Boolean.TRUE.equals(producto.getActivo())) {
+                aEliminar.add(item.getProductoId());
+                continue;
+            }
+            item.setNombreProducto(producto.getNombre());
+            item.setPrecioUnitario(producto.getPrecio());
+            item.setImagen(producto.getImagen());
+
+            Inventario inventario = inventarioDAO.buscarPorProducto(item.getProductoId());
+            int disponible = inventario != null ? inventario.getCantidad() : 0;
+            if (disponible <= 0) {
+                aEliminar.add(item.getProductoId());
+            } else if (item.getCantidad() > disponible) {
+                item.setCantidad(disponible);
+            }
+        }
+        for (Integer productoId : aEliminar) {
+            carrito.eliminarProducto(productoId);
+        }
     }
 
     private Producto validarProductoDisponible(int productoId, int cantidad) {

@@ -1,35 +1,47 @@
 package sv.udb.cafedonbosco.service.impl;
 
+import sv.udb.cafedonbosco.dao.BitacoraDAO;
 import sv.udb.cafedonbosco.dao.InventarioDAO;
 import sv.udb.cafedonbosco.dao.ProductoDAO;
 import sv.udb.cafedonbosco.dao.VentaDAO;
+import sv.udb.cafedonbosco.dao.impl.BitacoraDAOImpl;
 import sv.udb.cafedonbosco.dao.impl.InventarioDAOImpl;
 import sv.udb.cafedonbosco.dao.impl.ProductoDAOImpl;
 import sv.udb.cafedonbosco.dao.impl.VentaDAOImpl;
 import sv.udb.cafedonbosco.dto.request.CarritoItemRequestDTO;
 import sv.udb.cafedonbosco.dto.request.CheckoutRequestDTO;
+import sv.udb.cafedonbosco.dto.request.VentaFiltroDTO;
 import sv.udb.cafedonbosco.dto.request.VentaPresencialRequestDTO;
 import sv.udb.cafedonbosco.dto.response.DetalleVentaResponseDTO;
 import sv.udb.cafedonbosco.dto.response.VentaResponseDTO;
+import sv.udb.cafedonbosco.exception.AccesoDenegadoException;
 import sv.udb.cafedonbosco.exception.ErrorInternoException;
 import sv.udb.cafedonbosco.exception.RecursoNoEncontradoException;
 import sv.udb.cafedonbosco.exception.StockInsuficienteException;
+import sv.udb.cafedonbosco.exception.TransicionInvalidaException;
 import sv.udb.cafedonbosco.exception.ValidacionException;
-import sv.udb.cafedonbosco.model.CarritoItem;
+import sv.udb.cafedonbosco.model.Bitacora;
 import sv.udb.cafedonbosco.model.Carrito;
+import sv.udb.cafedonbosco.model.CarritoItem;
 import sv.udb.cafedonbosco.model.DetalleVenta;
+import sv.udb.cafedonbosco.model.EstadoPago;
 import sv.udb.cafedonbosco.model.EstadoVenta;
+import sv.udb.cafedonbosco.model.MovimientoInventario;
 import sv.udb.cafedonbosco.model.Producto;
+import sv.udb.cafedonbosco.model.TipoMovimiento;
 import sv.udb.cafedonbosco.model.TipoVenta;
 import sv.udb.cafedonbosco.model.Venta;
 import sv.udb.cafedonbosco.service.VentaService;
 import sv.udb.cafedonbosco.util.ConexionBD;
 import sv.udb.cafedonbosco.util.Constantes;
+import sv.udb.cafedonbosco.util.TransicionEstadoValidator;
 import sv.udb.cafedonbosco.util.ValidacionUtil;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -38,19 +50,28 @@ import java.util.UUID;
 public class VentaServiceImpl implements VentaService {
 
     private static final Set<String> METODOS_PAGO_VALIDOS = Set.of("TARJETA", "TRANSFERENCIA", "CONTRA_ENTREGA", "EFECTIVO");
+    private static final int MINUTOS_PREPARACION_POR_DEFECTO = 5;
 
     private final VentaDAO ventaDAO;
     private final ProductoDAO productoDAO;
     private final InventarioDAO inventarioDAO;
+    private final BitacoraDAO bitacoraDAO;
 
     public VentaServiceImpl() {
         this.ventaDAO = new VentaDAOImpl();
         this.productoDAO = new ProductoDAOImpl();
         this.inventarioDAO = new InventarioDAOImpl();
+        this.bitacoraDAO = new BitacoraDAOImpl();
     }
 
     @Override
-    public VentaResponseDTO procesarCheckoutWeb(Carrito carrito, CheckoutRequestDTO datos, Integer usuarioId) {
+    public VentaResponseDTO procesarCheckoutWeb(Carrito carrito, CheckoutRequestDTO datos, Integer usuarioId, String idempotencyKey) {
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            Venta yaProcesada = ventaDAO.buscarPorIdempotencyKey(idempotencyKey);
+            if (yaProcesada != null) {
+                return aResponseDTO(yaProcesada);
+            }
+        }
         if (carrito == null || carrito.estaVacio()) {
             throw new ValidacionException("El carrito esta vacio.");
         }
@@ -59,22 +80,27 @@ public class VentaServiceImpl implements VentaService {
         Venta venta = new Venta();
         venta.setUsuarioId(usuarioId);
         venta.setTipoVenta(TipoVenta.WEB);
-        venta.setEstado(EstadoVenta.PENDIENTE);
+        venta.setEstado(EstadoVenta.RECIBIDO);
         venta.setMetodoPago(datos.getMetodoPago());
-        venta.setEstadoPago(Constantes.ESTADO_PAGO_PENDIENTE);
+        venta.setEstadoPago("TARJETA".equals(datos.getMetodoPago()) ? EstadoPago.APROBADO : EstadoPago.PENDIENTE);
         venta.setTipoEntrega(datos.getTipoEntrega());
         venta.setNombreCliente(datos.getNombreCompleto().trim());
         venta.setCorreoCliente(datos.getCorreo().trim().toLowerCase());
         venta.setTelefonoCliente(datos.getTelefono().trim());
         venta.setDireccionCliente(datos.getDireccion());
         venta.setNotas(datos.getNotas());
+        venta.setIdempotencyKey(idempotencyKey);
 
         List<DetalleVenta> detalles = new ArrayList<>();
         for (CarritoItem item : carrito.getItems().values()) {
             detalles.add(new DetalleVenta(item.getProductoId(), item.getNombreProducto(), item.getCantidad(), null, null));
         }
 
-        Venta registrada = registrarConTransaccion(venta, detalles);
+        BigDecimal envio = Constantes.ENTREGA_DOMICILIO.equalsIgnoreCase(datos.getTipoEntrega())
+                ? Constantes.TARIFA_ENVIO_DOMICILIO
+                : BigDecimal.ZERO;
+
+        Venta registrada = registrarConTransaccion(venta, detalles, envio, usuarioId);
         carrito.vaciar();
         return aResponseDTO(registrada);
     }
@@ -92,9 +118,13 @@ public class VentaServiceImpl implements VentaService {
         Venta venta = new Venta();
         venta.setUsuarioId(usuarioAdminId);
         venta.setTipoVenta(TipoVenta.PRESENCIAL);
-        venta.setEstado(EstadoVenta.COMPLETADA);
+        // Se sirve al momento en el mostrador: nace ya en un estado terminal
+        // en vez de recorrer RECIBIDO->EN_PREPARACION->LISTO como un pedido
+        // web, porque no hay una cola de preparacion separada del cliente
+        // esperando en el mostrador.
+        venta.setEstado(EstadoVenta.ENTREGADO);
         venta.setMetodoPago(metodoPago);
-        venta.setEstadoPago(Constantes.ESTADO_PAGO_APROBADO);
+        venta.setEstadoPago(EstadoPago.APROBADO);
         venta.setTipoEntrega(Constantes.ENTREGA_RECOGER);
 
         List<DetalleVenta> detalles = new ArrayList<>();
@@ -105,7 +135,7 @@ public class VentaServiceImpl implements VentaService {
             detalles.add(new DetalleVenta(item.getProductoId(), null, item.getCantidad(), null, null));
         }
 
-        Venta registrada = registrarConTransaccion(venta, detalles);
+        Venta registrada = registrarConTransaccion(venta, detalles, BigDecimal.ZERO, usuarioAdminId);
         return aResponseDTO(registrada);
     }
 
@@ -113,10 +143,11 @@ public class VentaServiceImpl implements VentaService {
      * Nucleo transaccional compartido por la venta web y la presencial:
      * vuelve a leer el precio y el stock vigentes de cada producto (nunca
      * se confia en lo que traiga la sesion o la solicitud), descuenta el
-     * inventario de forma atomica y registra la cabecera y el detalle en
-     * una unica transaccion JDBC.
+     * inventario de forma atomica, deja un movimiento de inventario por
+     * cada linea y registra la cabecera y el detalle en una unica
+     * transaccion JDBC.
      */
-    private Venta registrarConTransaccion(Venta venta, List<DetalleVenta> detallesSolicitados) {
+    private Venta registrarConTransaccion(Venta venta, List<DetalleVenta> detallesSolicitados, BigDecimal envio, Integer usuarioId) {
         Connection conexion = null;
         try {
             conexion = ConexionBD.obtenerConexion();
@@ -124,6 +155,7 @@ public class VentaServiceImpl implements VentaService {
 
             BigDecimal subtotal = BigDecimal.ZERO;
             List<DetalleVenta> detallesFinales = new ArrayList<>();
+            List<MovimientoInventario> movimientos = new ArrayList<>();
 
             for (DetalleVenta solicitado : detallesSolicitados) {
                 Producto producto = productoDAO.buscarPorId(solicitado.getProductoId());
@@ -135,6 +167,16 @@ public class VentaServiceImpl implements VentaService {
                 if (!descontado) {
                     throw new StockInsuficienteException(producto.getNombre());
                 }
+                int stockNuevo = inventarioDAO.obtenerCantidadActual(conexion, producto.getId());
+
+                MovimientoInventario movimiento = new MovimientoInventario();
+                movimiento.setProductoId(producto.getId());
+                movimiento.setTipoMovimiento(TipoMovimiento.SALIDA);
+                movimiento.setCantidad(solicitado.getCantidad());
+                movimiento.setStockAnterior(stockNuevo + solicitado.getCantidad());
+                movimiento.setStockNuevo(stockNuevo);
+                movimiento.setUsuarioId(usuarioId);
+                movimientos.add(movimiento);
 
                 BigDecimal precioVigente = producto.getPrecio();
                 BigDecimal subtotalLinea = precioVigente.multiply(BigDecimal.valueOf(solicitado.getCantidad()));
@@ -145,22 +187,40 @@ public class VentaServiceImpl implements VentaService {
                 ));
             }
 
-            BigDecimal envio = BigDecimal.ZERO;
             venta.setSubtotal(subtotal);
             venta.setEnvio(envio);
             venta.setTotal(subtotal.add(envio));
             venta.setTokenTicket(generarTokenTicket());
 
             ventaDAO.crear(conexion, venta);
-            for (DetalleVenta detalle : detallesFinales) {
+
+            for (int i = 0; i < detallesFinales.size(); i++) {
+                DetalleVenta detalle = detallesFinales.get(i);
                 ventaDAO.crearDetalle(conexion, detalle, venta.getId());
+
+                MovimientoInventario movimiento = movimientos.get(i);
+                movimiento.setVentaId(venta.getId());
+                movimiento.setMotivo("Venta #" + venta.getId());
+                inventarioDAO.registrarMovimiento(conexion, movimiento);
             }
             venta.setDetalles(detallesFinales);
+
+            if (venta.getEstado() == EstadoVenta.ENTREGADO) {
+                LocalDateTime ahora = LocalDateTime.now();
+                ventaDAO.marcarEntregado(conexion, venta.getId(), ahora);
+                venta.setFechaEntregado(ahora);
+            }
 
             conexion.commit();
             return venta;
         } catch (SQLException e) {
             revertir(conexion);
+            if (venta.getIdempotencyKey() != null && esViolacionDeUnicidad(e)) {
+                Venta yaCreadaPorOtraSolicitud = ventaDAO.buscarPorIdempotencyKey(venta.getIdempotencyKey());
+                if (yaCreadaPorOtraSolicitud != null) {
+                    return yaCreadaPorOtraSolicitud;
+                }
+            }
             throw new ErrorInternoException("Error al registrar la venta", e);
         } catch (RuntimeException e) {
             revertir(conexion);
@@ -168,6 +228,10 @@ public class VentaServiceImpl implements VentaService {
         } finally {
             cerrar(conexion);
         }
+    }
+
+    private boolean esViolacionDeUnicidad(SQLException e) {
+        return e instanceof SQLIntegrityConstraintViolationException;
     }
 
     @Override
@@ -200,6 +264,196 @@ public class VentaServiceImpl implements VentaService {
             resultado.add(dto);
         }
         return resultado;
+    }
+
+    @Override
+    public List<VentaResponseDTO> listarFiltrado(VentaFiltroDTO filtro) {
+        List<VentaResponseDTO> resultado = new ArrayList<>();
+        for (Venta venta : ventaDAO.listarFiltrado(filtro)) {
+            VentaResponseDTO dto = aResponseDTO(venta);
+            dto.setTokenTicket(null);
+            resultado.add(dto);
+        }
+        return resultado;
+    }
+
+    @Override
+    public List<VentaResponseDTO> listarPedidosDeUsuario(int usuarioId, int limite) {
+        List<VentaResponseDTO> resultado = new ArrayList<>();
+        for (Venta venta : ventaDAO.listarPorUsuario(usuarioId, limite)) {
+            resultado.add(aResponseDTO(venta));
+        }
+        return resultado;
+    }
+
+    @Override
+    public VentaResponseDTO obtenerPedidoDeUsuario(int usuarioId, int ventaId) {
+        Venta venta = ventaDAO.buscarPorId(ventaId);
+        if (venta == null) {
+            throw new RecursoNoEncontradoException("El pedido solicitado no existe.");
+        }
+        if (venta.getUsuarioId() == null || !venta.getUsuarioId().equals(usuarioId)) {
+            throw new AccesoDenegadoException("No tienes permiso para ver este pedido.");
+        }
+        return aResponseDTO(venta);
+    }
+
+    @Override
+    public VentaResponseDTO cambiarEstado(int ventaId, EstadoVenta nuevoEstado, int usuarioAdminId) {
+        Connection conexion = null;
+        try {
+            conexion = ConexionBD.obtenerConexion();
+            conexion.setAutoCommit(false);
+
+            Venta venta = ventaDAO.buscarPorIdParaActualizar(conexion, ventaId);
+            if (venta == null) {
+                throw new RecursoNoEncontradoException("La venta solicitada no existe.");
+            }
+            TransicionEstadoValidator.validar(venta.getEstado(), nuevoEstado);
+
+            LocalDateTime ahora = LocalDateTime.now();
+            switch (nuevoEstado) {
+                case EN_PREPARACION -> {
+                    int minutos = calcularMinutosPreparacion(venta);
+                    LocalDateTime estimada = ahora.plusMinutes(minutos);
+                    ventaDAO.iniciarPreparacion(conexion, ventaId, ahora, estimada);
+                    venta.setFechaInicioPreparacion(ahora);
+                    venta.setFechaEstimadaListo(estimada);
+                }
+                case LISTO -> {
+                    ventaDAO.marcarListo(conexion, ventaId, ahora);
+                    venta.setFechaListo(ahora);
+                }
+                case ENTREGADO -> {
+                    ventaDAO.marcarEntregado(conexion, ventaId, ahora);
+                    venta.setFechaEntregado(ahora);
+                }
+                case CANCELADO -> devolverStockYCancelar(conexion, venta, usuarioAdminId);
+                default -> throw new TransicionInvalidaException("Transicion no soportada: " + nuevoEstado);
+            }
+            venta.setEstado(nuevoEstado);
+
+            bitacoraDAO.registrar(conexion, new Bitacora(usuarioAdminId, "CAMBIAR_ESTADO_VENTA", "VENTA", ventaId,
+                    "Estado cambiado a " + nuevoEstado));
+
+            conexion.commit();
+            return aResponseDTO(venta);
+        } catch (SQLException e) {
+            revertir(conexion);
+            throw new ErrorInternoException("Error al cambiar el estado de la venta", e);
+        } catch (RuntimeException e) {
+            revertir(conexion);
+            throw e;
+        } finally {
+            cerrar(conexion);
+        }
+    }
+
+    @Override
+    public VentaResponseDTO cambiarEstadoPago(int ventaId, EstadoPago nuevoEstadoPago, int usuarioAdminId) {
+        Connection conexion = null;
+        try {
+            conexion = ConexionBD.obtenerConexion();
+            conexion.setAutoCommit(false);
+
+            Venta venta = ventaDAO.buscarPorIdParaActualizar(conexion, ventaId);
+            if (venta == null) {
+                throw new RecursoNoEncontradoException("La venta solicitada no existe.");
+            }
+            if (venta.getEstadoPago() == nuevoEstadoPago) {
+                throw new TransicionInvalidaException("El pago ya esta en estado " + nuevoEstadoPago + ".");
+            }
+
+            ventaDAO.actualizarEstadoPago(conexion, ventaId, nuevoEstadoPago);
+            venta.setEstadoPago(nuevoEstadoPago);
+
+            bitacoraDAO.registrar(conexion, new Bitacora(usuarioAdminId, "CAMBIAR_ESTADO_PAGO", "VENTA", ventaId,
+                    "Pago cambiado a " + nuevoEstadoPago));
+
+            conexion.commit();
+            return aResponseDTO(venta);
+        } catch (SQLException e) {
+            revertir(conexion);
+            throw new ErrorInternoException("Error al cambiar el estado de pago", e);
+        } catch (RuntimeException e) {
+            revertir(conexion);
+            throw e;
+        } finally {
+            cerrar(conexion);
+        }
+    }
+
+    @Override
+    public VentaResponseDTO cancelar(int ventaId, int usuarioAdminId) {
+        return cambiarEstado(ventaId, EstadoVenta.CANCELADO, usuarioAdminId);
+    }
+
+    /**
+     * Devuelve al inventario cada linea de la venta y deja un movimiento
+     * DEVOLUCION por producto. Se llama dentro de la transaccion de
+     * cambiarEstado, con la venta ya bloqueada por SELECT ... FOR UPDATE,
+     * asi que no hay forma de que esto se ejecute dos veces para la misma
+     * venta (la segunda solicitud vera estado = CANCELADO y
+     * TransicionEstadoValidator la rechazara antes de llegar aqui).
+     */
+    private void devolverStockYCancelar(Connection conexion, Venta venta, int usuarioAdminId) {
+        for (DetalleVenta detalle : venta.getDetalles()) {
+            inventarioDAO.incrementarStock(conexion, detalle.getProductoId(), detalle.getCantidad());
+            int stockNuevo = inventarioDAO.obtenerCantidadActual(conexion, detalle.getProductoId());
+
+            MovimientoInventario movimiento = new MovimientoInventario();
+            movimiento.setProductoId(detalle.getProductoId());
+            movimiento.setTipoMovimiento(TipoMovimiento.DEVOLUCION);
+            movimiento.setCantidad(detalle.getCantidad());
+            movimiento.setStockAnterior(stockNuevo - detalle.getCantidad());
+            movimiento.setStockNuevo(stockNuevo);
+            movimiento.setMotivo("Cancelacion de la venta #" + venta.getId());
+            movimiento.setVentaId(venta.getId());
+            movimiento.setUsuarioId(usuarioAdminId);
+            inventarioDAO.registrarMovimiento(conexion, movimiento);
+        }
+        ventaDAO.marcarCancelado(conexion, venta.getId());
+    }
+
+    @Override
+    public int procesarPreparacionesVencidas() {
+        int actualizadas = 0;
+        for (Venta venta : ventaDAO.listarEnPreparacionVencidas()) {
+            Connection conexion = null;
+            try {
+                conexion = ConexionBD.obtenerConexion();
+                conexion.setAutoCommit(false);
+
+                // Se vuelve a comprobar bajo bloqueo por si un administrador
+                // ya movio manualmente esta venta entre el listado inicial
+                // y este punto.
+                Venta bloqueada = ventaDAO.buscarPorIdParaActualizar(conexion, venta.getId());
+                if (bloqueada != null && bloqueada.getEstado() == EstadoVenta.EN_PREPARACION) {
+                    ventaDAO.marcarListo(conexion, venta.getId(), LocalDateTime.now());
+                    conexion.commit();
+                    actualizadas++;
+                } else {
+                    conexion.rollback();
+                }
+            } catch (SQLException e) {
+                revertir(conexion);
+                // Un fallo en una venta no debe detener el resto del barrido del scheduler.
+            } finally {
+                cerrar(conexion);
+            }
+        }
+        return actualizadas;
+    }
+
+    private int calcularMinutosPreparacion(Venta venta) {
+        int maximo = 0;
+        for (DetalleVenta detalle : venta.getDetalles()) {
+            Producto producto = productoDAO.buscarPorId(detalle.getProductoId());
+            if (producto != null && producto.getTiempoPreparacionMinutos() != null) {
+                maximo = Math.max(maximo, producto.getTiempoPreparacionMinutos());
+            }
+        }
+        return maximo > 0 ? maximo : MINUTOS_PREPARACION_POR_DEFECTO;
     }
 
     private void validarDatosCheckout(CheckoutRequestDTO datos) {
@@ -243,7 +497,15 @@ public class VentaServiceImpl implements VentaService {
         dto.setEstadoPago(venta.getEstadoPago());
         dto.setTipoEntrega(venta.getTipoEntrega());
         dto.setNombreCliente(venta.getNombreCliente());
+        dto.setCorreoCliente(venta.getCorreoCliente());
+        dto.setTelefonoCliente(venta.getTelefonoCliente());
+        dto.setDireccionCliente(venta.getDireccionCliente());
+        dto.setNotas(venta.getNotas());
         dto.setFecha(venta.getFecha());
+        dto.setFechaInicioPreparacion(venta.getFechaInicioPreparacion());
+        dto.setFechaEstimadaListo(venta.getFechaEstimadaListo());
+        dto.setFechaListo(venta.getFechaListo());
+        dto.setFechaEntregado(venta.getFechaEntregado());
         dto.setTokenTicket(venta.getTokenTicket());
 
         List<DetalleVentaResponseDTO> detalles = new ArrayList<>();

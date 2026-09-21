@@ -10,7 +10,7 @@ public class Producto {
     private String descripcion;
     private BigDecimal precio;
     private String imagen;
-    private String tiempoPreparacion;
+    private Integer tiempoPreparacionMinutos;
     private Boolean activo;
 
     public Producto() {
@@ -23,7 +23,7 @@ public class Producto {
             String descripcion,
             BigDecimal precio,
             String imagen,
-            String tiempoPreparacion,
+            Integer tiempoPreparacionMinutos,
             Boolean activo
     ) {
         this.id = id;
@@ -32,7 +32,7 @@ public class Producto {
         this.descripcion = descripcion;
         this.precio = precio;
         this.imagen = imagen;
-        this.tiempoPreparacion = tiempoPreparacion;
+        this.tiempoPreparacionMinutos = tiempoPreparacionMinutos;
         this.activo = activo;
     }
 
@@ -84,12 +84,12 @@ public class Producto {
         this.imagen = imagen;
     }
 
-    public String getTiempoPreparacion() {
-        return tiempoPreparacion;
+    public Integer getTiempoPreparacionMinutos() {
+        return tiempoPreparacionMinutos;
     }
 
-    public void setTiempoPreparacion(String tiempoPreparacion) {
-        this.tiempoPreparacion = tiempoPreparacion;
+    public void setTiempoPreparacionMinutos(Integer tiempoPreparacionMinutos) {
+        this.tiempoPreparacionMinutos = tiempoPreparacionMinutos;
     }
 
     public Boolean getActivo() {

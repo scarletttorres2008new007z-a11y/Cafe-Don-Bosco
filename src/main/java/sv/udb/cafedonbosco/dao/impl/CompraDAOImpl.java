@@ -19,11 +19,12 @@ public class CompraDAOImpl implements CompraDAO {
 
     @Override
     public Compra crear(Connection conexion, Compra compra) {
-        String sql = "INSERT INTO compra (proveedor, usuario_id, total) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO compra (proveedor_id, proveedor_nombre, usuario_id, total) VALUES (?, ?, ?, ?)";
         try (PreparedStatement stmt = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, compra.getProveedor());
-            stmt.setInt(2, compra.getUsuarioId());
-            stmt.setBigDecimal(3, compra.getTotal());
+            stmt.setInt(1, compra.getProveedorId());
+            stmt.setString(2, compra.getProveedorNombre());
+            stmt.setInt(3, compra.getUsuarioId());
+            stmt.setBigDecimal(4, compra.getTotal());
             stmt.executeUpdate();
             try (ResultSet claves = stmt.getGeneratedKeys()) {
                 if (claves.next()) {
@@ -54,7 +55,8 @@ public class CompraDAOImpl implements CompraDAO {
 
     @Override
     public List<Compra> listarTodas() {
-        String sql = "SELECT id, proveedor, usuario_id, total, fecha FROM compra ORDER BY fecha DESC";
+        String sql = "SELECT id, proveedor_id, proveedor_nombre, usuario_id, total, fecha "
+                + "FROM compra ORDER BY fecha DESC";
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement stmt = conexion.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -70,7 +72,8 @@ public class CompraDAOImpl implements CompraDAO {
 
     @Override
     public Compra buscarPorId(int id) {
-        String sql = "SELECT id, proveedor, usuario_id, total, fecha FROM compra WHERE id = ?";
+        String sql = "SELECT id, proveedor_id, proveedor_nombre, usuario_id, total, fecha "
+                + "FROM compra WHERE id = ?";
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement stmt = conexion.prepareStatement(sql)) {
             stmt.setInt(1, id);
@@ -113,7 +116,8 @@ public class CompraDAOImpl implements CompraDAO {
     private Compra mapear(ResultSet rs) throws SQLException {
         Compra compra = new Compra();
         compra.setId(rs.getInt("id"));
-        compra.setProveedor(rs.getString("proveedor"));
+        compra.setProveedorId(rs.getInt("proveedor_id"));
+        compra.setProveedorNombre(rs.getString("proveedor_nombre"));
         compra.setUsuarioId(rs.getInt("usuario_id"));
         compra.setTotal(rs.getBigDecimal("total"));
         Timestamp fecha = rs.getTimestamp("fecha");

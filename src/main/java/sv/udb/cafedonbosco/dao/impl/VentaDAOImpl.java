@@ -1,12 +1,15 @@
 package sv.udb.cafedonbosco.dao.impl;
 
 import sv.udb.cafedonbosco.dao.VentaDAO;
+import sv.udb.cafedonbosco.dto.request.VentaFiltroDTO;
 import sv.udb.cafedonbosco.exception.ErrorInternoException;
 import sv.udb.cafedonbosco.model.DetalleVenta;
+import sv.udb.cafedonbosco.model.EstadoPago;
 import sv.udb.cafedonbosco.model.EstadoVenta;
 import sv.udb.cafedonbosco.model.TipoVenta;
 import sv.udb.cafedonbosco.model.Venta;
 import sv.udb.cafedonbosco.util.ConexionBD;
+import sv.udb.cafedonbosco.util.Constantes;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -15,6 +18,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Types;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,27 +28,25 @@ public class VentaDAOImpl implements VentaDAO {
     private static final String COLUMNAS_VENTA =
             "id, usuario_id, tipo_venta, estado, subtotal, envio, total, metodo_pago, "
                     + "estado_pago, tipo_entrega, nombre_cliente, correo_cliente, telefono_cliente, "
-                    + "direccion_cliente, notas, token_ticket, fecha";
+                    + "direccion_cliente, notas, token_ticket, idempotency_key, fecha, "
+                    + "fecha_inicio_preparacion, fecha_estimada_listo, fecha_listo, fecha_entregado, "
+                    + "actualizado_en";
 
     @Override
     public Venta crear(Connection conexion, Venta venta) {
         String sql = "INSERT INTO venta (usuario_id, tipo_venta, estado, subtotal, envio, total, "
                 + "metodo_pago, estado_pago, tipo_entrega, nombre_cliente, correo_cliente, "
-                + "telefono_cliente, direccion_cliente, notas, token_ticket) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "telefono_cliente, direccion_cliente, notas, token_ticket, idempotency_key) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            if (venta.getUsuarioId() != null) {
-                stmt.setInt(1, venta.getUsuarioId());
-            } else {
-                stmt.setNull(1, java.sql.Types.INTEGER);
-            }
+            setIntOrNull(stmt, 1, venta.getUsuarioId());
             stmt.setString(2, venta.getTipoVenta().name());
             stmt.setString(3, venta.getEstado().name());
             stmt.setBigDecimal(4, venta.getSubtotal());
             stmt.setBigDecimal(5, venta.getEnvio());
             stmt.setBigDecimal(6, venta.getTotal());
             stmt.setString(7, venta.getMetodoPago());
-            stmt.setString(8, venta.getEstadoPago());
+            stmt.setString(8, venta.getEstadoPago().name());
             stmt.setString(9, venta.getTipoEntrega());
             stmt.setString(10, venta.getNombreCliente());
             stmt.setString(11, venta.getCorreoCliente());
@@ -51,6 +54,7 @@ public class VentaDAOImpl implements VentaDAO {
             stmt.setString(13, venta.getDireccionCliente());
             stmt.setString(14, venta.getNotas());
             stmt.setString(15, venta.getTokenTicket());
+            stmt.setString(16, venta.getIdempotencyKey());
             stmt.executeUpdate();
             try (ResultSet claves = stmt.getGeneratedKeys()) {
                 if (claves.next()) {
@@ -83,19 +87,33 @@ public class VentaDAOImpl implements VentaDAO {
 
     @Override
     public Venta buscarPorId(int id) {
-        return buscarPorCampo("id", String.valueOf(id));
+        String sql = "SELECT " + COLUMNAS_VENTA + " FROM venta WHERE id = ?";
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            return ejecutarBusquedaUnica(conexion, stmt);
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al buscar la venta", e);
+        }
     }
 
     @Override
     public Venta buscarPorToken(String token) {
-        return buscarPorCampo("token_ticket", token);
-    }
-
-    private Venta buscarPorCampo(String columna, String valor) {
-        String sql = "SELECT " + COLUMNAS_VENTA + " FROM venta WHERE " + columna + " = ?";
+        String sql = "SELECT " + COLUMNAS_VENTA + " FROM venta WHERE token_ticket = ?";
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement stmt = conexion.prepareStatement(sql)) {
-            stmt.setString(1, valor);
+            stmt.setString(1, token);
+            return ejecutarBusquedaUnica(conexion, stmt);
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al buscar la venta", e);
+        }
+    }
+
+    @Override
+    public Venta buscarPorIdParaActualizar(Connection conexion, int id) {
+        String sql = "SELECT " + COLUMNAS_VENTA + " FROM venta WHERE id = ? FOR UPDATE";
+        try (PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (!rs.next()) {
                     return null;
@@ -105,7 +123,44 @@ public class VentaDAOImpl implements VentaDAO {
                 return venta;
             }
         } catch (SQLException e) {
-            throw new ErrorInternoException("Error al buscar la venta", e);
+            throw new ErrorInternoException("Error al buscar la venta para actualizarla", e);
+        }
+    }
+
+    @Override
+    public boolean existeIdempotencyKey(String idempotencyKey) {
+        String sql = "SELECT 1 FROM venta WHERE idempotency_key = ?";
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setString(1, idempotencyKey);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al verificar la clave de idempotencia", e);
+        }
+    }
+
+    @Override
+    public Venta buscarPorIdempotencyKey(String idempotencyKey) {
+        String sql = "SELECT " + COLUMNAS_VENTA + " FROM venta WHERE idempotency_key = ?";
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setString(1, idempotencyKey);
+            return ejecutarBusquedaUnica(conexion, stmt);
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al buscar la venta por clave de idempotencia", e);
+        }
+    }
+
+    private Venta ejecutarBusquedaUnica(Connection conexion, PreparedStatement stmt) throws SQLException {
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (!rs.next()) {
+                return null;
+            }
+            Venta venta = mapear(rs);
+            venta.setDetalles(buscarDetalles(conexion, venta.getId()));
+            return venta;
         }
     }
 
@@ -145,13 +200,7 @@ public class VentaDAOImpl implements VentaDAO {
                 stmt.setString(indice++, tipoVenta.name());
             }
             stmt.setInt(indice, limite);
-            List<Venta> ventas = new ArrayList<>();
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    ventas.add(mapear(rs));
-                }
-            }
-            return ventas;
+            return ejecutarListado(stmt);
         } catch (SQLException e) {
             throw new ErrorInternoException("Error al listar el historial de ventas", e);
         }
@@ -163,15 +212,166 @@ public class VentaDAOImpl implements VentaDAO {
     }
 
     @Override
+    public List<Venta> listarFiltrado(VentaFiltroDTO filtro) {
+        StringBuilder sql = new StringBuilder("SELECT " + COLUMNAS_VENTA + " FROM venta WHERE 1=1 ");
+        List<Object> parametros = new ArrayList<>();
+
+        if (filtro.getTipoVenta() != null) {
+            sql.append("AND tipo_venta = ? ");
+            parametros.add(filtro.getTipoVenta().name());
+        }
+        if (filtro.getEstado() != null) {
+            sql.append("AND estado = ? ");
+            parametros.add(filtro.getEstado().name());
+        }
+        if (filtro.getEstadoPago() != null) {
+            sql.append("AND estado_pago = ? ");
+            parametros.add(filtro.getEstadoPago().name());
+        }
+        if (filtro.getFechaDesde() != null) {
+            sql.append("AND fecha >= ? ");
+            parametros.add(Timestamp.valueOf(filtro.getFechaDesde().atStartOfDay()));
+        }
+        if (filtro.getFechaHasta() != null) {
+            sql.append("AND fecha < ? ");
+            parametros.add(Timestamp.valueOf(filtro.getFechaHasta().plusDays(1).atStartOfDay()));
+        }
+        if (filtro.getCliente() != null && !filtro.getCliente().isBlank()) {
+            sql.append("AND (nombre_cliente LIKE ? OR correo_cliente LIKE ?) ");
+            String comodin = "%" + filtro.getCliente().trim() + "%";
+            parametros.add(comodin);
+            parametros.add(comodin);
+        }
+        if (filtro.getNumeroVenta() != null) {
+            sql.append("AND id = ? ");
+            parametros.add(filtro.getNumeroVenta());
+        }
+        if (filtro.getMetodoPago() != null && !filtro.getMetodoPago().isBlank()) {
+            sql.append("AND metodo_pago = ? ");
+            parametros.add(filtro.getMetodoPago());
+        }
+
+        int tamano = Math.min(Math.max(filtro.getSize(), 1), Constantes.TAMANO_PAGINA_MAXIMO);
+        int desplazamiento = filtro.getPage() * tamano;
+        sql.append("ORDER BY fecha DESC LIMIT ? OFFSET ?");
+        parametros.add(tamano);
+        parametros.add(desplazamiento);
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql.toString())) {
+            for (int i = 0; i < parametros.size(); i++) {
+                stmt.setObject(i + 1, parametros.get(i));
+            }
+            return ejecutarListado(stmt);
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al filtrar el historial de ventas", e);
+        }
+    }
+
+    @Override
+    public List<Venta> listarPorUsuario(int usuarioId, int limite) {
+        String sql = "SELECT " + COLUMNAS_VENTA + " FROM venta WHERE usuario_id = ? ORDER BY fecha DESC LIMIT ?";
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setInt(1, usuarioId);
+            stmt.setInt(2, Math.min(Math.max(limite, 1), Constantes.TAMANO_PAGINA_MAXIMO));
+            return ejecutarListado(stmt);
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al listar los pedidos del usuario", e);
+        }
+    }
+
+    @Override
+    public List<Venta> listarEnPreparacionVencidas() {
+        String sql = "SELECT " + COLUMNAS_VENTA + " FROM venta "
+                + "WHERE estado = 'EN_PREPARACION' AND fecha_estimada_listo IS NOT NULL "
+                + "AND fecha_estimada_listo <= NOW()";
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            return ejecutarListado(stmt);
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al listar ventas en preparacion vencidas", e);
+        }
+    }
+
+    private List<Venta> ejecutarListado(PreparedStatement stmt) throws SQLException {
+        List<Venta> ventas = new ArrayList<>();
+        try (ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                ventas.add(mapear(rs));
+            }
+        }
+        return ventas;
+    }
+
+    @Override
+    public void iniciarPreparacion(Connection conexion, int ventaId, LocalDateTime inicio, LocalDateTime estimadaListo) {
+        String sql = "UPDATE venta SET estado = 'EN_PREPARACION', fecha_inicio_preparacion = ?, "
+                + "fecha_estimada_listo = ? WHERE id = ?";
+        ejecutarActualizacion(conexion, sql, stmt -> {
+            stmt.setTimestamp(1, Timestamp.valueOf(inicio));
+            stmt.setTimestamp(2, Timestamp.valueOf(estimadaListo));
+            stmt.setInt(3, ventaId);
+        });
+    }
+
+    @Override
+    public void marcarListo(Connection conexion, int ventaId, LocalDateTime listoEn) {
+        String sql = "UPDATE venta SET estado = 'LISTO', fecha_listo = ? WHERE id = ?";
+        ejecutarActualizacion(conexion, sql, stmt -> {
+            stmt.setTimestamp(1, Timestamp.valueOf(listoEn));
+            stmt.setInt(2, ventaId);
+        });
+    }
+
+    @Override
+    public void marcarEntregado(Connection conexion, int ventaId, LocalDateTime entregadoEn) {
+        String sql = "UPDATE venta SET estado = 'ENTREGADO', fecha_entregado = ? WHERE id = ?";
+        ejecutarActualizacion(conexion, sql, stmt -> {
+            stmt.setTimestamp(1, Timestamp.valueOf(entregadoEn));
+            stmt.setInt(2, ventaId);
+        });
+    }
+
+    @Override
+    public void marcarCancelado(Connection conexion, int ventaId) {
+        String sql = "UPDATE venta SET estado = 'CANCELADO' WHERE id = ?";
+        ejecutarActualizacion(conexion, sql, stmt -> stmt.setInt(1, ventaId));
+    }
+
+    @Override
+    public void actualizarEstadoPago(Connection conexion, int ventaId, EstadoPago nuevoEstadoPago) {
+        String sql = "UPDATE venta SET estado_pago = ? WHERE id = ?";
+        ejecutarActualizacion(conexion, sql, stmt -> {
+            stmt.setString(1, nuevoEstadoPago.name());
+            stmt.setInt(2, ventaId);
+        });
+    }
+
+    private void ejecutarActualizacion(Connection conexion, String sql, EnlazadorParametros enlazador) {
+        try (PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            enlazador.enlazar(stmt);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al actualizar la venta", e);
+        }
+    }
+
+    @FunctionalInterface
+    private interface EnlazadorParametros {
+        void enlazar(PreparedStatement stmt) throws SQLException;
+    }
+
+    @Override
     public BigDecimal sumarTotalDelDia() {
         String sql = "SELECT COALESCE(SUM(total), 0) FROM venta "
-                + "WHERE DATE(fecha) = CURDATE() AND estado <> 'CANCELADA'";
+                + "WHERE DATE(fecha) = CURDATE() AND estado <> 'CANCELADO'";
         return ejecutarSuma(sql);
     }
 
     @Override
     public int contarVentasDelDia() {
-        String sql = "SELECT COUNT(*) FROM venta WHERE DATE(fecha) = CURDATE() AND estado <> 'CANCELADA'";
+        String sql = "SELECT COUNT(*) FROM venta WHERE DATE(fecha) = CURDATE() AND estado <> 'CANCELADO'";
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement stmt = conexion.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -185,8 +385,29 @@ public class VentaDAOImpl implements VentaDAO {
     public BigDecimal sumarTotalDelMes() {
         String sql = "SELECT COALESCE(SUM(total), 0) FROM venta "
                 + "WHERE YEAR(fecha) = YEAR(CURDATE()) AND MONTH(fecha) = MONTH(CURDATE()) "
-                + "AND estado <> 'CANCELADA'";
+                + "AND estado <> 'CANCELADO'";
         return ejecutarSuma(sql);
+    }
+
+    @Override
+    public BigDecimal sumarIngresosCobrados() {
+        String sql = "SELECT COALESCE(SUM(total), 0) FROM venta "
+                + "WHERE estado_pago = 'APROBADO' AND estado <> 'CANCELADO'";
+        return ejecutarSuma(sql);
+    }
+
+    @Override
+    public int contarPorEstado(EstadoVenta estado) {
+        String sql = "SELECT COUNT(*) FROM venta WHERE estado = ?";
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setString(1, estado.name());
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al contar ventas por estado", e);
+        }
     }
 
     private BigDecimal ejecutarSuma(String sql) {
@@ -196,6 +417,14 @@ public class VentaDAOImpl implements VentaDAO {
             return rs.next() ? rs.getBigDecimal(1) : BigDecimal.ZERO;
         } catch (SQLException e) {
             throw new ErrorInternoException("Error al calcular el total de ventas", e);
+        }
+    }
+
+    private void setIntOrNull(PreparedStatement stmt, int indice, Integer valor) throws SQLException {
+        if (valor != null) {
+            stmt.setInt(indice, valor);
+        } else {
+            stmt.setNull(indice, Types.INTEGER);
         }
     }
 
@@ -210,7 +439,7 @@ public class VentaDAOImpl implements VentaDAO {
         venta.setEnvio(rs.getBigDecimal("envio"));
         venta.setTotal(rs.getBigDecimal("total"));
         venta.setMetodoPago(rs.getString("metodo_pago"));
-        venta.setEstadoPago(rs.getString("estado_pago"));
+        venta.setEstadoPago(EstadoPago.valueOf(rs.getString("estado_pago")));
         venta.setTipoEntrega(rs.getString("tipo_entrega"));
         venta.setNombreCliente(rs.getString("nombre_cliente"));
         venta.setCorreoCliente(rs.getString("correo_cliente"));
@@ -218,8 +447,17 @@ public class VentaDAOImpl implements VentaDAO {
         venta.setDireccionCliente(rs.getString("direccion_cliente"));
         venta.setNotas(rs.getString("notas"));
         venta.setTokenTicket(rs.getString("token_ticket"));
-        Timestamp fecha = rs.getTimestamp("fecha");
-        venta.setFecha(fecha != null ? fecha.toLocalDateTime() : null);
+        venta.setIdempotencyKey(rs.getString("idempotency_key"));
+        venta.setFecha(aLocalDateTime(rs.getTimestamp("fecha")));
+        venta.setFechaInicioPreparacion(aLocalDateTime(rs.getTimestamp("fecha_inicio_preparacion")));
+        venta.setFechaEstimadaListo(aLocalDateTime(rs.getTimestamp("fecha_estimada_listo")));
+        venta.setFechaListo(aLocalDateTime(rs.getTimestamp("fecha_listo")));
+        venta.setFechaEntregado(aLocalDateTime(rs.getTimestamp("fecha_entregado")));
+        venta.setActualizadoEn(aLocalDateTime(rs.getTimestamp("actualizado_en")));
         return venta;
+    }
+
+    private LocalDateTime aLocalDateTime(Timestamp timestamp) {
+        return timestamp != null ? timestamp.toLocalDateTime() : null;
     }
 }

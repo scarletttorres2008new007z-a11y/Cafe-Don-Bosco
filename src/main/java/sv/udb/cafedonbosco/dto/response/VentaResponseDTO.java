@@ -1,5 +1,6 @@
 package sv.udb.cafedonbosco.dto.response;
 
+import sv.udb.cafedonbosco.model.EstadoPago;
 import sv.udb.cafedonbosco.model.EstadoVenta;
 import sv.udb.cafedonbosco.model.TipoVenta;
 import sv.udb.cafedonbosco.util.FormatoUtil;
@@ -29,10 +30,18 @@ public class VentaResponseDTO {
     private BigDecimal envio;
     private BigDecimal total;
     private String metodoPago;
-    private String estadoPago;
+    private EstadoPago estadoPago;
     private String tipoEntrega;
     private String nombreCliente;
+    private String correoCliente;
+    private String telefonoCliente;
+    private String direccionCliente;
+    private String notas;
     private LocalDateTime fecha;
+    private LocalDateTime fechaInicioPreparacion;
+    private LocalDateTime fechaEstimadaListo;
+    private LocalDateTime fechaListo;
+    private LocalDateTime fechaEntregado;
     private String tokenTicket;
     private List<DetalleVentaResponseDTO> detalles;
 
@@ -95,11 +104,11 @@ public class VentaResponseDTO {
         this.metodoPago = metodoPago;
     }
 
-    public String getEstadoPago() {
+    public EstadoPago getEstadoPago() {
         return estadoPago;
     }
 
-    public void setEstadoPago(String estadoPago) {
+    public void setEstadoPago(EstadoPago estadoPago) {
         this.estadoPago = estadoPago;
     }
 
@@ -119,12 +128,76 @@ public class VentaResponseDTO {
         this.nombreCliente = nombreCliente;
     }
 
+    public String getCorreoCliente() {
+        return correoCliente;
+    }
+
+    public void setCorreoCliente(String correoCliente) {
+        this.correoCliente = correoCliente;
+    }
+
+    public String getTelefonoCliente() {
+        return telefonoCliente;
+    }
+
+    public void setTelefonoCliente(String telefonoCliente) {
+        this.telefonoCliente = telefonoCliente;
+    }
+
+    public String getDireccionCliente() {
+        return direccionCliente;
+    }
+
+    public void setDireccionCliente(String direccionCliente) {
+        this.direccionCliente = direccionCliente;
+    }
+
+    public String getNotas() {
+        return notas;
+    }
+
+    public void setNotas(String notas) {
+        this.notas = notas;
+    }
+
     public LocalDateTime getFecha() {
         return fecha;
     }
 
     public void setFecha(LocalDateTime fecha) {
         this.fecha = fecha;
+    }
+
+    public LocalDateTime getFechaInicioPreparacion() {
+        return fechaInicioPreparacion;
+    }
+
+    public void setFechaInicioPreparacion(LocalDateTime fechaInicioPreparacion) {
+        this.fechaInicioPreparacion = fechaInicioPreparacion;
+    }
+
+    public LocalDateTime getFechaEstimadaListo() {
+        return fechaEstimadaListo;
+    }
+
+    public void setFechaEstimadaListo(LocalDateTime fechaEstimadaListo) {
+        this.fechaEstimadaListo = fechaEstimadaListo;
+    }
+
+    public LocalDateTime getFechaListo() {
+        return fechaListo;
+    }
+
+    public void setFechaListo(LocalDateTime fechaListo) {
+        this.fechaListo = fechaListo;
+    }
+
+    public LocalDateTime getFechaEntregado() {
+        return fechaEntregado;
+    }
+
+    public void setFechaEntregado(LocalDateTime fechaEntregado) {
+        this.fechaEntregado = fechaEntregado;
     }
 
     /**

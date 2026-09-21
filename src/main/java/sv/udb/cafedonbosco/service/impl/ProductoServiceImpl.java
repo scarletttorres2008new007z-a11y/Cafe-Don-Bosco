@@ -10,6 +10,7 @@ import sv.udb.cafedonbosco.dto.request.ProductoRequestDTO;
 import sv.udb.cafedonbosco.dto.response.ProductoAdminResponseDTO;
 import sv.udb.cafedonbosco.dto.response.ProductoResponseDTO;
 import sv.udb.cafedonbosco.exception.ErrorInternoException;
+import sv.udb.cafedonbosco.exception.RecursoDuplicadoException;
 import sv.udb.cafedonbosco.exception.RecursoNoEncontradoException;
 import sv.udb.cafedonbosco.exception.ValidacionException;
 import sv.udb.cafedonbosco.model.Categoria;
@@ -24,7 +25,6 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,14 +43,7 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public List<ProductoResponseDTO> listarCatalogo(Integer categoriaId, String busqueda, String orden) {
-        List<Producto> productos;
-        if (ValidacionUtil.esTextoValido(busqueda)) {
-            productos = productoDAO.buscarActivosPorNombre(busqueda.trim());
-        } else if (categoriaId != null) {
-            productos = productoDAO.listarActivosPorCategoria(categoriaId);
-        } else {
-            productos = productoDAO.listarActivos();
-        }
+        List<Producto> productos = productoDAO.buscarCatalogo(categoriaId, busqueda, orden);
 
         Map<Integer, Categoria> categorias = indexarCategorias();
         Map<Integer, Inventario> inventarios = indexarInventarios();
@@ -59,29 +52,7 @@ public class ProductoServiceImpl implements ProductoService {
         for (Producto producto : productos) {
             catalogo.add(aResponseDTO(producto, categorias, inventarios));
         }
-
-        ordenar(catalogo, orden);
         return catalogo;
-    }
-
-    private void ordenar(List<ProductoResponseDTO> catalogo, String orden) {
-        if (orden == null) {
-            return;
-        }
-        switch (orden) {
-            case "precio_menor":
-                catalogo.sort(Comparator.comparing(ProductoResponseDTO::getPrecio));
-                break;
-            case "precio_mayor":
-                catalogo.sort(Comparator.comparing(ProductoResponseDTO::getPrecio).reversed());
-                break;
-            case "nombre":
-                catalogo.sort(Comparator.comparing(ProductoResponseDTO::getNombre));
-                break;
-            default:
-                // "popularidad" u otro valor: se mantiene el orden por nombre que
-                // ya entrega el DAO hasta que exista un ranking real de ventas.
-        }
     }
 
     @Override
@@ -137,8 +108,16 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     public ProductoAdminResponseDTO crear(ProductoRequestDTO datos) {
         validar(datos);
-        if (categoriaDAO.buscarPorId(datos.getCategoriaId()) == null) {
+        Categoria categoria = categoriaDAO.buscarPorId(datos.getCategoriaId());
+        if (categoria == null) {
             throw new ValidacionException("La categoria indicada no existe.");
+        }
+        if (!Boolean.TRUE.equals(categoria.getActivo())) {
+            throw new ValidacionException("No se pueden crear productos en una categoria inactiva.");
+        }
+        if (productoDAO.existeNombreEnCategoria(datos.getCategoriaId(), datos.getNombre().trim(), null)) {
+            throw new RecursoDuplicadoException(
+                    "Ya existe un producto llamado \"" + datos.getNombre().trim() + "\" en esa categoria.");
         }
 
         Producto producto = new Producto();
@@ -147,7 +126,7 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setDescripcion(datos.getDescripcion());
         producto.setPrecio(datos.getPrecio());
         producto.setImagen(datos.getImagen());
-        producto.setTiempoPreparacion(datos.getTiempoPreparacion());
+        producto.setTiempoPreparacionMinutos(datos.getTiempoPreparacionMinutos());
         producto.setActivo(datos.getActivo() == null || datos.getActivo());
 
         int stockInicial = datos.getStockInicial() == null ? 0 : datos.getStockInicial();
@@ -181,8 +160,16 @@ public class ProductoServiceImpl implements ProductoService {
         if (existente == null) {
             throw new RecursoNoEncontradoException("El producto solicitado no existe.");
         }
-        if (categoriaDAO.buscarPorId(datos.getCategoriaId()) == null) {
+        Categoria categoria = categoriaDAO.buscarPorId(datos.getCategoriaId());
+        if (categoria == null) {
             throw new ValidacionException("La categoria indicada no existe.");
+        }
+        if (!Boolean.TRUE.equals(categoria.getActivo())) {
+            throw new ValidacionException("No se puede mover el producto a una categoria inactiva.");
+        }
+        if (productoDAO.existeNombreEnCategoria(datos.getCategoriaId(), datos.getNombre().trim(), id)) {
+            throw new RecursoDuplicadoException(
+                    "Ya existe otro producto llamado \"" + datos.getNombre().trim() + "\" en esa categoria.");
         }
 
         existente.setCategoriaId(datos.getCategoriaId());
@@ -190,12 +177,28 @@ public class ProductoServiceImpl implements ProductoService {
         existente.setDescripcion(datos.getDescripcion());
         existente.setPrecio(datos.getPrecio());
         existente.setImagen(datos.getImagen());
-        existente.setTiempoPreparacion(datos.getTiempoPreparacion());
+        existente.setTiempoPreparacionMinutos(datos.getTiempoPreparacionMinutos());
         existente.setActivo(datos.getActivo() == null ? existente.getActivo() : datos.getActivo());
-        productoDAO.actualizar(existente);
 
-        if (datos.getStockMinimo() != null) {
-            inventarioDAO.actualizarStockMinimo(id, datos.getStockMinimo());
+        // Producto + stock minimo se guardan juntos en una sola transaccion:
+        // dos conexiones separadas podian dejar uno de los dos cambios a
+        // medias si el segundo fallaba.
+        Connection conexion = null;
+        try {
+            conexion = ConexionBD.obtenerConexion();
+            conexion.setAutoCommit(false);
+
+            productoDAO.actualizar(conexion, existente);
+            if (datos.getStockMinimo() != null) {
+                inventarioDAO.actualizarStockMinimo(conexion, id, datos.getStockMinimo());
+            }
+
+            conexion.commit();
+        } catch (SQLException e) {
+            revertir(conexion);
+            throw new ErrorInternoException("Error al actualizar el producto y su inventario", e);
+        } finally {
+            cerrar(conexion);
         }
 
         return aAdminDTO(existente, indexarCategorias(), indexarInventarios());
@@ -217,6 +220,15 @@ public class ProductoServiceImpl implements ProductoService {
                 || datos.getPrecio().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ValidacionException("Nombre, categoria y precio (mayor a cero) son obligatorios.");
         }
+        if (datos.getStockInicial() != null && datos.getStockInicial() < 0) {
+            throw new ValidacionException("El stock inicial no puede ser negativo.");
+        }
+        if (datos.getStockMinimo() != null && datos.getStockMinimo() < 0) {
+            throw new ValidacionException("El stock minimo no puede ser negativo.");
+        }
+        if (datos.getTiempoPreparacionMinutos() != null && datos.getTiempoPreparacionMinutos() <= 0) {
+            throw new ValidacionException("El tiempo de preparacion debe ser mayor a cero minutos.");
+        }
     }
 
     private Map<Integer, Categoria> indexarCategorias() {
@@ -235,6 +247,14 @@ public class ProductoServiceImpl implements ProductoService {
         return mapa;
     }
 
+    /** "3" -> "3 minutos"; null -> "No especificado" (lo decide la vista). */
+    private String formatearTiempoPreparacion(Integer minutos) {
+        if (minutos == null) {
+            return null;
+        }
+        return minutos + (minutos == 1 ? " minuto" : " minutos");
+    }
+
     private ProductoResponseDTO aResponseDTO(Producto producto, Map<Integer, Categoria> categorias, Map<Integer, Inventario> inventarios) {
         ProductoResponseDTO dto = new ProductoResponseDTO();
         dto.setId(producto.getId());
@@ -245,7 +265,7 @@ public class ProductoServiceImpl implements ProductoService {
         dto.setDescripcion(producto.getDescripcion());
         dto.setPrecio(producto.getPrecio());
         dto.setImagen(producto.getImagen());
-        dto.setTiempoPreparacion(producto.getTiempoPreparacion());
+        dto.setTiempoPreparacion(formatearTiempoPreparacion(producto.getTiempoPreparacionMinutos()));
         Inventario inventario = inventarios.get(producto.getId());
         dto.setDisponible(inventario != null && inventario.getCantidad() != null && inventario.getCantidad() > 0);
         return dto;
@@ -261,7 +281,7 @@ public class ProductoServiceImpl implements ProductoService {
         dto.setDescripcion(producto.getDescripcion());
         dto.setPrecio(producto.getPrecio());
         dto.setImagen(producto.getImagen());
-        dto.setTiempoPreparacion(producto.getTiempoPreparacion());
+        dto.setTiempoPreparacion(formatearTiempoPreparacion(producto.getTiempoPreparacionMinutos()));
         dto.setActivo(producto.getActivo());
         Inventario inventario = inventarios.get(producto.getId());
         dto.setStock(inventario != null ? inventario.getCantidad() : 0);

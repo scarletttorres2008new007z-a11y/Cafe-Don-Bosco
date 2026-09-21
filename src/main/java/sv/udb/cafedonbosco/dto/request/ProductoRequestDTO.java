@@ -9,7 +9,7 @@ public class ProductoRequestDTO {
     private String descripcion;
     private BigDecimal precio;
     private String imagen;
-    private String tiempoPreparacion;
+    private Integer tiempoPreparacionMinutos;
     private Integer stockInicial;
     private Integer stockMinimo;
     private Boolean activo;
@@ -57,12 +57,12 @@ public class ProductoRequestDTO {
         this.imagen = imagen;
     }
 
-    public String getTiempoPreparacion() {
-        return tiempoPreparacion;
+    public Integer getTiempoPreparacionMinutos() {
+        return tiempoPreparacionMinutos;
     }
 
-    public void setTiempoPreparacion(String tiempoPreparacion) {
-        this.tiempoPreparacion = tiempoPreparacion;
+    public void setTiempoPreparacionMinutos(Integer tiempoPreparacionMinutos) {
+        this.tiempoPreparacionMinutos = tiempoPreparacionMinutos;
     }
 
     public Integer getStockInicial() {

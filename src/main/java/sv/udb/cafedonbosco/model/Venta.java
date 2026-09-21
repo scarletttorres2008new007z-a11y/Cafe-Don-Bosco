@@ -9,6 +9,11 @@ import java.util.List;
  * Modelo unificado de operacion de venta: cubre tanto la venta presencial
  * (POS del administrador) como el pedido web del consumidor. TipoVenta
  * distingue el origen y evita duplicar entidades e inventario.
+ * <p>
+ * `estado` es el ciclo del PEDIDO (RECIBIDO..ENTREGADO/CANCELADO) y
+ * `estadoPago` es el ciclo del PAGO (PENDIENTE/APROBADO/RECHAZADO): son
+ * conceptos independientes, una venta puede estar EN_PREPARACION con el
+ * pago todavia PENDIENTE (pago contra entrega, por ejemplo).
  */
 public class Venta {
 
@@ -20,7 +25,7 @@ public class Venta {
     private BigDecimal envio;
     private BigDecimal total;
     private String metodoPago;
-    private String estadoPago;
+    private EstadoPago estadoPago;
     private String tipoEntrega;
     private String nombreCliente;
     private String correoCliente;
@@ -28,7 +33,13 @@ public class Venta {
     private String direccionCliente;
     private String notas;
     private String tokenTicket;
+    private String idempotencyKey;
     private LocalDateTime fecha;
+    private LocalDateTime fechaInicioPreparacion;
+    private LocalDateTime fechaEstimadaListo;
+    private LocalDateTime fechaListo;
+    private LocalDateTime fechaEntregado;
+    private LocalDateTime actualizadoEn;
     private List<DetalleVenta> detalles = new ArrayList<>();
 
     public Venta() {
@@ -98,11 +109,11 @@ public class Venta {
         this.metodoPago = metodoPago;
     }
 
-    public String getEstadoPago() {
+    public EstadoPago getEstadoPago() {
         return estadoPago;
     }
 
-    public void setEstadoPago(String estadoPago) {
+    public void setEstadoPago(EstadoPago estadoPago) {
         this.estadoPago = estadoPago;
     }
 
@@ -162,12 +173,60 @@ public class Venta {
         this.tokenTicket = tokenTicket;
     }
 
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
     public LocalDateTime getFecha() {
         return fecha;
     }
 
     public void setFecha(LocalDateTime fecha) {
         this.fecha = fecha;
+    }
+
+    public LocalDateTime getFechaInicioPreparacion() {
+        return fechaInicioPreparacion;
+    }
+
+    public void setFechaInicioPreparacion(LocalDateTime fechaInicioPreparacion) {
+        this.fechaInicioPreparacion = fechaInicioPreparacion;
+    }
+
+    public LocalDateTime getFechaEstimadaListo() {
+        return fechaEstimadaListo;
+    }
+
+    public void setFechaEstimadaListo(LocalDateTime fechaEstimadaListo) {
+        this.fechaEstimadaListo = fechaEstimadaListo;
+    }
+
+    public LocalDateTime getFechaListo() {
+        return fechaListo;
+    }
+
+    public void setFechaListo(LocalDateTime fechaListo) {
+        this.fechaListo = fechaListo;
+    }
+
+    public LocalDateTime getFechaEntregado() {
+        return fechaEntregado;
+    }
+
+    public void setFechaEntregado(LocalDateTime fechaEntregado) {
+        this.fechaEntregado = fechaEntregado;
+    }
+
+    public LocalDateTime getActualizadoEn() {
+        return actualizadoEn;
+    }
+
+    public void setActualizadoEn(LocalDateTime actualizadoEn) {
+        this.actualizadoEn = actualizadoEn;
     }
 
     public List<DetalleVenta> getDetalles() {

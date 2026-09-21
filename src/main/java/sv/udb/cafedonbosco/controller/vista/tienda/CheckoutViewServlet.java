@@ -38,6 +38,7 @@ public class CheckoutViewServlet extends TiendaBaseServlet {
             response.sendRedirect(request.getContextPath() + "/tienda/carrito");
             return;
         }
+        SessionUtil.generarNuevaClaveCheckout(request);
         mostrarFormulario(request, response, null, new CheckoutRequestDTO());
     }
 
@@ -54,8 +55,10 @@ public class CheckoutViewServlet extends TiendaBaseServlet {
         datos.setMetodoPago(request.getParameter("metodoPago"));
 
         Carrito carrito = SessionUtil.obtenerOCrearCarrito(request);
+        String idempotencyKey = SessionUtil.obtenerClaveCheckout(request);
         try {
-            VentaResponseDTO venta = ventaService.procesarCheckoutWeb(carrito, datos, null);
+            VentaResponseDTO venta = ventaService.procesarCheckoutWeb(carrito, datos, null, idempotencyKey);
+            SessionUtil.limpiarClaveCheckout(request);
             response.sendRedirect(request.getContextPath() + "/tienda/confirmacion?token=" + venta.getTokenTicket());
         } catch (AppException e) {
             mostrarFormulario(request, response, e.getMessage(), datos);

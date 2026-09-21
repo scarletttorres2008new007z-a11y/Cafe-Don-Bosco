@@ -9,5 +9,6 @@ public interface InventarioService {
 
     List<ProductoAdminResponseDTO> listarInventario();
 
-    void ajustar(InventarioAjusteRequestDTO datos);
+    /** Ajuste manual de stock/stock minimo; queda registrado en el movimiento de inventario y en la bitacora. */
+    void ajustar(InventarioAjusteRequestDTO datos, int usuarioAdminId);
 }

@@ -14,6 +14,7 @@ public class CheckoutRequestDTO {
     private String direccion;
     private String notas;
     private String metodoPago;
+    private String idempotencyKey;
 
     public CheckoutRequestDTO() {
     }
@@ -72,5 +73,13 @@ public class CheckoutRequestDTO {
 
     public void setMetodoPago(String metodoPago) {
         this.metodoPago = metodoPago;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 }

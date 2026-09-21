@@ -6,6 +6,8 @@ import sv.udb.cafedonbosco.dto.response.UsuarioResponseDTO;
 import sv.udb.cafedonbosco.model.Carrito;
 import sv.udb.cafedonbosco.model.Rol;
 
+import java.util.UUID;
+
 public final class SessionUtil {
 
     private SessionUtil() {
@@ -40,5 +42,31 @@ public final class SessionUtil {
             sesion.setAttribute(atributo, carrito);
         }
         return carrito;
+    }
+
+    /**
+     * Genera una clave de idempotencia nueva para un intento de checkout y
+     * la guarda en la sesion. Se llama al mostrar el formulario (no en
+     * cada reintento tras un error de validacion), de forma que un doble
+     * envio del mismo formulario viaje siempre con la misma clave.
+     */
+    public static String generarNuevaClaveCheckout(HttpServletRequest request) {
+        String clave = UUID.randomUUID().toString();
+        request.getSession(true).setAttribute(Constantes.SESSION_CHECKOUT_IDEMPOTENCY, clave);
+        return clave;
+    }
+
+    /** Clave de idempotencia del intento de checkout en curso, si existe. */
+    public static String obtenerClaveCheckout(HttpServletRequest request) {
+        HttpSession sesion = request.getSession(false);
+        return sesion != null ? (String) sesion.getAttribute(Constantes.SESSION_CHECKOUT_IDEMPOTENCY) : null;
+    }
+
+    /** Se llama tras procesar el checkout (con exito o no) para que el siguiente intento use una clave distinta. */
+    public static void limpiarClaveCheckout(HttpServletRequest request) {
+        HttpSession sesion = request.getSession(false);
+        if (sesion != null) {
+            sesion.removeAttribute(Constantes.SESSION_CHECKOUT_IDEMPOTENCY);
+        }
     }
 }

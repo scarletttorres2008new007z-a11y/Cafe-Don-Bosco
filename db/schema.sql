@@ -1,5 +1,13 @@
 -- =====================================================================
 -- Cafe Don Bosco - Esquema de base de datos (MySQL 8+)
+--
+-- Nota de migracion: este script asume una base nueva. Si ya tenias una
+-- base de una version anterior del proyecto (con venta.estado en
+-- PENDIENTE/PAGADA/COMPLETADA/CANCELADA, producto.tiempo_preparacion
+-- como texto libre o compra.proveedor como texto), lo mas simple para
+-- un proyecto academico sin datos que conservar es:
+--   DROP DATABASE cafe_don_bosco;
+-- y volver a correr este script completo.
 -- =====================================================================
 
 CREATE DATABASE IF NOT EXISTS cafe_don_bosco
@@ -32,20 +40,27 @@ CREATE TABLE IF NOT EXISTS categoria (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
--- Producto: cafe, bebidas, postres y comida del catalogo
+-- Producto: cafe, bebidas, postres y comida del catalogo.
+-- tiempo_preparacion_minutos es numerico para poder calcular la ETA de
+-- un pedido; el texto que ve el consumidor ("3 minutos") se construye
+-- en el DTO a partir de este valor, no se guarda como texto libre.
+-- UNIQUE(categoria_id, nombre): evita productos duplicados dentro de
+-- la misma categoria sin impedir el mismo nombre en categorias
+-- distintas (ej. "Combo" en Cafe y en Comida).
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS producto (
-    id                  INT AUTO_INCREMENT PRIMARY KEY,
-    categoria_id        INT NOT NULL,
-    nombre              VARCHAR(120) NOT NULL,
-    descripcion         VARCHAR(500),
-    precio              DECIMAL(10,2) NOT NULL,
-    imagen              VARCHAR(255),
-    tiempo_preparacion  VARCHAR(60),
-    activo              BOOLEAN NOT NULL DEFAULT TRUE,
-    creado_en           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id                          INT AUTO_INCREMENT PRIMARY KEY,
+    categoria_id                INT NOT NULL,
+    nombre                      VARCHAR(120) NOT NULL,
+    descripcion                 VARCHAR(500),
+    precio                      DECIMAL(10,2) NOT NULL,
+    imagen                      VARCHAR(255),
+    tiempo_preparacion_minutos  INT,
+    activo                      BOOLEAN NOT NULL DEFAULT TRUE,
+    creado_en                   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_producto_categoria
-        FOREIGN KEY (categoria_id) REFERENCES categoria(id)
+        FOREIGN KEY (categoria_id) REFERENCES categoria(id),
+    CONSTRAINT uk_producto_categoria_nombre UNIQUE (categoria_id, nombre)
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
@@ -57,35 +72,57 @@ CREATE TABLE IF NOT EXISTS inventario (
     cantidad        INT NOT NULL DEFAULT 0,
     stock_minimo    INT NOT NULL DEFAULT 5,
     CONSTRAINT fk_inventario_producto
-        FOREIGN KEY (producto_id) REFERENCES producto(id)
+        FOREIGN KEY (producto_id) REFERENCES producto(id),
+    CONSTRAINT chk_inventario_cantidad CHECK (cantidad >= 0),
+    CONSTRAINT chk_inventario_stock_minimo CHECK (stock_minimo >= 0)
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
 -- Venta: modelo unificado para ventas presenciales (POS) y pedidos web.
 -- TipoVenta distingue el origen; el consumidor invitado no requiere
 -- usuario_id, por lo que se guardan los datos de contacto en la venta.
+--
+-- `estado` es el ciclo del PEDIDO (RECIBIDO..ENTREGADO/CANCELADO) y
+-- `estado_pago` el ciclo del PAGO (PENDIENTE/APROBADO/RECHAZADO): son
+-- conceptos independientes, nunca se mezclan.
+--
+-- idempotency_key evita procesar dos veces un mismo checkout enviado
+-- por error dos veces (doble clic, reintento de red).
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS venta (
-    id                  INT AUTO_INCREMENT PRIMARY KEY,
-    usuario_id          INT NULL,
-    tipo_venta          ENUM('PRESENCIAL', 'WEB') NOT NULL,
-    estado              ENUM('PENDIENTE', 'PAGADA', 'COMPLETADA', 'CANCELADA') NOT NULL DEFAULT 'PENDIENTE',
-    subtotal            DECIMAL(10,2) NOT NULL,
-    envio               DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    total               DECIMAL(10,2) NOT NULL,
-    metodo_pago         VARCHAR(30),
-    estado_pago         VARCHAR(20)  NOT NULL DEFAULT 'PENDIENTE',
-    tipo_entrega        VARCHAR(20),
-    nombre_cliente      VARCHAR(150),
-    correo_cliente      VARCHAR(120),
-    telefono_cliente    VARCHAR(30),
-    direccion_cliente   VARCHAR(255),
-    notas               VARCHAR(500),
-    token_ticket        VARCHAR(64) NOT NULL UNIQUE,
-    fecha               TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id                          INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id                  INT NULL,
+    tipo_venta                  ENUM('PRESENCIAL', 'WEB') NOT NULL,
+    estado                      ENUM('RECIBIDO', 'EN_PREPARACION', 'LISTO', 'ENTREGADO', 'CANCELADO')
+                                    NOT NULL DEFAULT 'RECIBIDO',
+    subtotal                    DECIMAL(10,2) NOT NULL,
+    envio                       DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    total                       DECIMAL(10,2) NOT NULL,
+    metodo_pago                 VARCHAR(30),
+    estado_pago                 ENUM('PENDIENTE', 'APROBADO', 'RECHAZADO') NOT NULL DEFAULT 'PENDIENTE',
+    tipo_entrega                VARCHAR(20),
+    nombre_cliente               VARCHAR(150),
+    correo_cliente               VARCHAR(120),
+    telefono_cliente             VARCHAR(30),
+    direccion_cliente            VARCHAR(255),
+    notas                       VARCHAR(500),
+    token_ticket                VARCHAR(64) NOT NULL UNIQUE,
+    idempotency_key              VARCHAR(80) NULL UNIQUE,
+    fecha                       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_inicio_preparacion     TIMESTAMP NULL,
+    fecha_estimada_listo         TIMESTAMP NULL,
+    fecha_listo                 TIMESTAMP NULL,
+    fecha_entregado              TIMESTAMP NULL,
+    actualizado_en               TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_venta_usuario
         FOREIGN KEY (usuario_id) REFERENCES usuario(id)
 ) ENGINE=InnoDB;
+
+CREATE INDEX idx_venta_usuario_id ON venta(usuario_id);
+CREATE INDEX idx_venta_estado ON venta(estado);
+CREATE INDEX idx_venta_estado_pago ON venta(estado_pago);
+CREATE INDEX idx_venta_tipo_venta ON venta(tipo_venta);
+CREATE INDEX idx_venta_fecha ON venta(fecha);
 
 -- ---------------------------------------------------------------------
 -- DetalleVenta: productos incluidos en cada venta (precio historico)
@@ -101,18 +138,40 @@ CREATE TABLE IF NOT EXISTS detalle_venta (
     CONSTRAINT fk_detalleventa_venta
         FOREIGN KEY (venta_id) REFERENCES venta(id) ON DELETE CASCADE,
     CONSTRAINT fk_detalleventa_producto
-        FOREIGN KEY (producto_id) REFERENCES producto(id)
+        FOREIGN KEY (producto_id) REFERENCES producto(id),
+    CONSTRAINT chk_detalleventa_cantidad CHECK (cantidad > 0)
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_detalleventa_venta_id ON detalle_venta(venta_id);
+CREATE INDEX idx_detalleventa_producto_id ON detalle_venta(producto_id);
+
+-- ---------------------------------------------------------------------
+-- Proveedor: entidad propia en vez de texto libre en compra.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS proveedor (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    nombre      VARCHAR(150) NOT NULL UNIQUE,
+    contacto    VARCHAR(120),
+    telefono    VARCHAR(30),
+    correo      VARCHAR(120),
+    direccion   VARCHAR(255),
+    activo      BOOLEAN NOT NULL DEFAULT TRUE
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
--- Compra: ingreso de mercaderia registrado por el administrador
+-- Compra: ingreso de mercaderia registrado por el administrador.
+-- proveedor_nombre es una fotografia del nombre al momento de la
+-- compra (igual criterio que detalle_venta.nombre_producto).
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS compra (
-    id          INT AUTO_INCREMENT PRIMARY KEY,
-    proveedor   VARCHAR(150) NOT NULL,
-    usuario_id  INT NOT NULL,
-    total       DECIMAL(10,2) NOT NULL,
-    fecha       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    proveedor_id        INT NOT NULL,
+    proveedor_nombre    VARCHAR(150) NOT NULL,
+    usuario_id          INT NOT NULL,
+    total               DECIMAL(10,2) NOT NULL,
+    fecha               TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_compra_proveedor
+        FOREIGN KEY (proveedor_id) REFERENCES proveedor(id),
     CONSTRAINT fk_compra_usuario
         FOREIGN KEY (usuario_id) REFERENCES usuario(id)
 ) ENGINE=InnoDB;
@@ -130,7 +189,55 @@ CREATE TABLE IF NOT EXISTS detalle_compra (
     CONSTRAINT fk_detallecompra_compra
         FOREIGN KEY (compra_id) REFERENCES compra(id) ON DELETE CASCADE,
     CONSTRAINT fk_detallecompra_producto
-        FOREIGN KEY (producto_id) REFERENCES producto(id)
+        FOREIGN KEY (producto_id) REFERENCES producto(id),
+    CONSTRAINT chk_detallecompra_cantidad CHECK (cantidad > 0),
+    CONSTRAINT chk_detallecompra_costo CHECK (costo_unitario > 0)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- MovimientoInventario: registro inmutable de cada cambio de stock.
+-- venta_id/compra_id son excluyentes; ambos pueden ser NULL cuando el
+-- movimiento es un ajuste manual del administrador.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS movimiento_inventario (
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    producto_id         INT NOT NULL,
+    tipo_movimiento     ENUM('ENTRADA', 'SALIDA', 'AJUSTE', 'DEVOLUCION') NOT NULL,
+    cantidad            INT NOT NULL,
+    stock_anterior      INT NOT NULL,
+    stock_nuevo         INT NOT NULL,
+    motivo              VARCHAR(255),
+    venta_id            INT NULL,
+    compra_id           INT NULL,
+    usuario_id          INT NULL,
+    fecha               TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_movimiento_producto
+        FOREIGN KEY (producto_id) REFERENCES producto(id),
+    CONSTRAINT fk_movimiento_venta
+        FOREIGN KEY (venta_id) REFERENCES venta(id),
+    CONSTRAINT fk_movimiento_compra
+        FOREIGN KEY (compra_id) REFERENCES compra(id),
+    CONSTRAINT fk_movimiento_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuario(id),
+    CONSTRAINT chk_movimiento_cantidad CHECK (cantidad > 0)
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_movimiento_producto_id ON movimiento_inventario(producto_id);
+CREATE INDEX idx_movimiento_fecha ON movimiento_inventario(fecha);
+
+-- ---------------------------------------------------------------------
+-- Bitacora: auditoria de operaciones administrativas importantes.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS bitacora (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id  INT NULL,
+    accion      VARCHAR(60) NOT NULL,
+    entidad     VARCHAR(60) NOT NULL,
+    entidad_id  INT,
+    detalle     VARCHAR(500),
+    fecha       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_bitacora_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuario(id)
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
@@ -153,23 +260,29 @@ INSERT INTO categoria (nombre, descripcion, activo) VALUES
 ON DUPLICATE KEY UPDATE nombre = nombre;
 
 -- Productos de ejemplo para poder probar el catalogo sin cargar datos a mano
-INSERT INTO producto (categoria_id, nombre, descripcion, precio, imagen, tiempo_preparacion, activo)
-SELECT id, 'Cafe Latte', 'Cafe espresso con leche vaporizada.', 2.50, NULL, '2 - 3 minutos', TRUE
+INSERT INTO producto (categoria_id, nombre, descripcion, precio, imagen, tiempo_preparacion_minutos, activo)
+SELECT id, 'Cafe Latte', 'Cafe espresso con leche vaporizada.', 2.50, NULL, 3, TRUE
 FROM categoria WHERE nombre = 'Cafe'
 UNION ALL
-SELECT id, 'Cafe Americano', 'Cafe puro, de sabor intenso.', 2.00, NULL, '1 - 2 minutos', TRUE
+SELECT id, 'Cafe Americano', 'Cafe puro, de sabor intenso.', 2.00, NULL, 2, TRUE
 FROM categoria WHERE nombre = 'Cafe'
 UNION ALL
-SELECT id, 'Frappe de vainilla', 'Refrescante y cremoso.', 3.00, NULL, '3 - 4 minutos', TRUE
+SELECT id, 'Frappe de vainilla', 'Refrescante y cremoso.', 3.00, NULL, 4, TRUE
 FROM categoria WHERE nombre = 'Bebidas'
 UNION ALL
-SELECT id, 'Pastel de chocolate', 'Suave, intenso y delicioso.', 3.50, NULL, NULL, TRUE
+SELECT id, 'Pastel de chocolate', 'Suave, intenso y delicioso.', 3.50, NULL, 1, TRUE
 FROM categoria WHERE nombre = 'Postres'
 UNION ALL
-SELECT id, 'Croissant', 'Hojaldre artesanal.', 2.00, NULL, NULL, TRUE
-FROM categoria WHERE nombre = 'Comida';
+SELECT id, 'Croissant', 'Hojaldre artesanal.', 2.00, NULL, 1, TRUE
+FROM categoria WHERE nombre = 'Comida'
+ON DUPLICATE KEY UPDATE nombre = nombre;
 
 INSERT INTO inventario (producto_id, cantidad, stock_minimo)
 SELECT id, 30, 5 FROM producto WHERE NOT EXISTS (
     SELECT 1 FROM inventario WHERE inventario.producto_id = producto.id
 );
+
+INSERT INTO proveedor (nombre, contacto, telefono, correo, direccion, activo)
+VALUES ('Distribuidora Cafetalera S.A.', 'Juan Perez', '+503 2222 3333',
+        'ventas@distribuidoracafetalera.com', 'San Salvador', TRUE)
+ON DUPLICATE KEY UPDATE nombre = nombre;

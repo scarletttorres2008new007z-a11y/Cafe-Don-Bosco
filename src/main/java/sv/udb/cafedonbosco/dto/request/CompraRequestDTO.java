@@ -5,18 +5,18 @@ import java.util.List;
 
 public class CompraRequestDTO {
 
-    private String proveedor;
+    private Integer proveedorId;
     private List<DetalleCompraRequestDTO> items;
 
     public CompraRequestDTO() {
     }
 
-    public String getProveedor() {
-        return proveedor;
+    public Integer getProveedorId() {
+        return proveedorId;
     }
 
-    public void setProveedor(String proveedor) {
-        this.proveedor = proveedor;
+    public void setProveedorId(Integer proveedorId) {
+        this.proveedorId = proveedorId;
     }
 
     public List<DetalleCompraRequestDTO> getItems() {
