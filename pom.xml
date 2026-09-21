@@ -45,6 +45,13 @@
             <version>0.4</version>
         </dependency>
 
+        <!-- Generacion del PDF real del ticket -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.31</version>
+        </dependency>
+
         <!-- JSTL para las vistas (evita scriptlets Java dentro del JSP) -->
         <dependency>
             <groupId>jakarta.servlet.jsp.jstl</groupId>
