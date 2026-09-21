@@ -31,9 +31,11 @@ import sv.udb.cafedonbosco.model.Producto;
 import sv.udb.cafedonbosco.model.TipoMovimiento;
 import sv.udb.cafedonbosco.model.TipoVenta;
 import sv.udb.cafedonbosco.model.Venta;
+import sv.udb.cafedonbosco.service.HorarioAtencionService;
 import sv.udb.cafedonbosco.service.VentaService;
 import sv.udb.cafedonbosco.util.ConexionBD;
 import sv.udb.cafedonbosco.util.Constantes;
+import sv.udb.cafedonbosco.util.FechaUtil;
 import sv.udb.cafedonbosco.util.TransicionEstadoValidator;
 import sv.udb.cafedonbosco.util.ValidacionUtil;
 
@@ -56,12 +58,14 @@ public class VentaServiceImpl implements VentaService {
     private final ProductoDAO productoDAO;
     private final InventarioDAO inventarioDAO;
     private final BitacoraDAO bitacoraDAO;
+    private final HorarioAtencionService horarioAtencionService;
 
     public VentaServiceImpl() {
         this.ventaDAO = new VentaDAOImpl();
         this.productoDAO = new ProductoDAOImpl();
         this.inventarioDAO = new InventarioDAOImpl();
         this.bitacoraDAO = new BitacoraDAOImpl();
+        this.horarioAtencionService = new HorarioAtencionServiceImpl();
     }
 
     @Override
@@ -72,6 +76,7 @@ public class VentaServiceImpl implements VentaService {
                 return aResponseDTO(yaProcesada);
             }
         }
+        horarioAtencionService.validarLocalAbiertoParaPedido(TipoVenta.WEB);
         if (carrito == null || carrito.estaVacio()) {
             throw new ValidacionException("El carrito esta vacio.");
         }
@@ -107,6 +112,7 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public VentaResponseDTO registrarVentaPresencial(VentaPresencialRequestDTO datos, int usuarioAdminId) {
+        horarioAtencionService.validarLocalAbiertoParaPedido(TipoVenta.PRESENCIAL);
         if (datos == null || datos.getItems() == null || datos.getItems().isEmpty()) {
             throw new ValidacionException("La venta debe incluir al menos un producto.");
         }
@@ -191,6 +197,11 @@ public class VentaServiceImpl implements VentaService {
             venta.setEnvio(envio);
             venta.setTotal(subtotal.add(envio));
             venta.setTokenTicket(generarTokenTicket());
+            // Se fija explicitamente en vez de confiar en el DEFAULT
+            // CURRENT_TIMESTAMP de la columna: ese default usa la zona
+            // horaria del propio servidor de MySQL, que puede no ser
+            // El Salvador si la base corre en un contenedor/nube en UTC.
+            venta.setFecha(FechaUtil.obtenerFechaHoraActual());
 
             ventaDAO.crear(conexion, venta);
 
@@ -206,7 +217,7 @@ public class VentaServiceImpl implements VentaService {
             venta.setDetalles(detallesFinales);
 
             if (venta.getEstado() == EstadoVenta.ENTREGADO) {
-                LocalDateTime ahora = LocalDateTime.now();
+                LocalDateTime ahora = FechaUtil.obtenerFechaHoraActual();
                 ventaDAO.marcarEntregado(conexion, venta.getId(), ahora);
                 venta.setFechaEntregado(ahora);
             }
@@ -339,7 +350,7 @@ public class VentaServiceImpl implements VentaService {
             }
             TransicionEstadoValidator.validar(venta.getEstado(), nuevoEstado);
 
-            LocalDateTime ahora = LocalDateTime.now();
+            LocalDateTime ahora = FechaUtil.obtenerFechaHoraActual();
             switch (nuevoEstado) {
                 case EN_PREPARACION -> {
                     int minutos = calcularMinutosPreparacion(venta);
@@ -457,7 +468,7 @@ public class VentaServiceImpl implements VentaService {
                 // y este punto.
                 Venta bloqueada = ventaDAO.buscarPorIdParaActualizar(conexion, venta.getId());
                 if (bloqueada != null && bloqueada.getEstado() == EstadoVenta.EN_PREPARACION) {
-                    ventaDAO.marcarListo(conexion, venta.getId(), LocalDateTime.now());
+                    ventaDAO.marcarListo(conexion, venta.getId(), FechaUtil.obtenerFechaHoraActual());
                     conexion.commit();
                     actualizadas++;
                 } else {

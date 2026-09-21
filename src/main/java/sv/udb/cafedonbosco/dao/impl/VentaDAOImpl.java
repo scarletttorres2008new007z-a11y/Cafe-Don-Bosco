@@ -36,8 +36,8 @@ public class VentaDAOImpl implements VentaDAO {
     public Venta crear(Connection conexion, Venta venta) {
         String sql = "INSERT INTO venta (usuario_id, tipo_venta, estado, subtotal, envio, total, "
                 + "metodo_pago, estado_pago, tipo_entrega, nombre_cliente, correo_cliente, "
-                + "telefono_cliente, direccion_cliente, notas, token_ticket, idempotency_key) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "telefono_cliente, direccion_cliente, notas, token_ticket, idempotency_key, fecha) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             setIntOrNull(stmt, 1, venta.getUsuarioId());
             stmt.setString(2, venta.getTipoVenta().name());
@@ -55,6 +55,10 @@ public class VentaDAOImpl implements VentaDAO {
             stmt.setString(14, venta.getNotas());
             stmt.setString(15, venta.getTokenTicket());
             stmt.setString(16, venta.getIdempotencyKey());
+            // fecha se fija explicitamente desde FechaUtil (hora real de El
+            // Salvador) en vez de depender del DEFAULT CURRENT_TIMESTAMP de
+            // la columna, que usaria la zona horaria del servidor de MySQL.
+            stmt.setTimestamp(17, Timestamp.valueOf(venta.getFecha()));
             stmt.executeUpdate();
             try (ResultSet claves = stmt.getGeneratedKeys()) {
                 if (claves.next()) {

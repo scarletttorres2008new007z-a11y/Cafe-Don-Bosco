@@ -241,6 +241,26 @@ CREATE TABLE IF NOT EXISTS bitacora (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- Horario de atencion: un pedido (web o presencial) solo se acepta si
+-- la hora actual en El Salvador cae dentro del horario del dia y ese
+-- canal esta habilitado. permitir_pedidos_app/local tambien sirve para
+-- cerrar un canal por completo un dia especifico (feriado, mantenimiento)
+-- sin tener que borrar el horario configurado.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS horario_atencion (
+    id                      INT AUTO_INCREMENT PRIMARY KEY,
+    dia_semana              TINYINT NOT NULL,   -- 1 = Lunes ... 7 = Domingo (DayOfWeek.getValue())
+    nombre_dia              VARCHAR(20) NOT NULL,
+    hora_apertura           TIME NOT NULL,
+    hora_cierre             TIME NOT NULL,
+    permitir_pedidos_app    BOOLEAN NOT NULL DEFAULT TRUE,
+    permitir_pedidos_local  BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT uk_horario_dia UNIQUE (dia_semana),
+    CONSTRAINT chk_horario_dia_semana CHECK (dia_semana BETWEEN 1 AND 7),
+    CONSTRAINT chk_horario_rango CHECK (hora_cierre > hora_apertura)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- Datos iniciales
 -- ---------------------------------------------------------------------
 
@@ -286,3 +306,13 @@ INSERT INTO proveedor (nombre, contacto, telefono, correo, direccion, activo)
 VALUES ('Distribuidora Cafetalera S.A.', 'Juan Perez', '+503 2222 3333',
         'ventas@distribuidoracafetalera.com', 'San Salvador', TRUE)
 ON DUPLICATE KEY UPDATE nombre = nombre;
+
+INSERT INTO horario_atencion (dia_semana, nombre_dia, hora_apertura, hora_cierre) VALUES
+    (1, 'LUNES', '06:30:00', '20:30:00'),
+    (2, 'MARTES', '06:30:00', '20:30:00'),
+    (3, 'MIERCOLES', '06:30:00', '20:30:00'),
+    (4, 'JUEVES', '06:30:00', '20:30:00'),
+    (5, 'VIERNES', '06:30:00', '21:30:00'),
+    (6, 'SABADO', '07:00:00', '21:30:00'),
+    (7, 'DOMINGO', '07:00:00', '19:00:00')
+ON DUPLICATE KEY UPDATE dia_semana = dia_semana;
