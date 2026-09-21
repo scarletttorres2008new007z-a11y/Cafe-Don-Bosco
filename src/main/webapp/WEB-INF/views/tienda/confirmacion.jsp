@@ -28,6 +28,8 @@
                 <h2>&iexcl;Pedido confirmado!</h2>
                 <p>Gracias por tu compra. Tu pedido ha sido procesado correctamente.</p>
 
+                <%@ include file="_stepper-estado.jspf" %>
+
                 <div class="detalle-pedido-grid">
                     <div>
                         <span class="etiqueta-info">Numero de pedido</span>

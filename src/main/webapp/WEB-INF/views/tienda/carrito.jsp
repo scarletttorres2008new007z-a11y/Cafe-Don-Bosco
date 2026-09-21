@@ -69,9 +69,9 @@
                         </div>
                     </c:forEach>
 
-                    <form method="post" action="${pageContext.request.contextPath}/tienda/carrito" style="margin-top:14px;">
+                    <form method="post" action="${pageContext.request.contextPath}/tienda/carrito" style="margin-top:14px;" id="formVaciarCarrito">
                         <input type="hidden" name="accion" value="vaciar">
-                        <button type="submit" class="boton secundario pequeno">Vaciar carrito</button>
+                        <button type="button" class="boton secundario pequeno" id="botonVaciarCarrito">Vaciar carrito</button>
                     </form>
                 </div>
 
@@ -85,14 +85,23 @@
                         <dt class="total-final">Total</dt>
                         <dd class="total-final odometro">$${resumen.totalFormateado}</dd>
                     </dl>
-                    <a class="boton" style="width:100%; margin-top:14px; text-align:center;" href="${pageContext.request.contextPath}/tienda/checkout">Proceder al checkout &rarr;</a>
+                    <a class="boton boton-ripple" style="width:100%; margin-top:14px; text-align:center;" href="${pageContext.request.contextPath}/tienda/checkout">Proceder al checkout &rarr;</a>
                 </div>
             </div>
+
+            <dialog id="modalConfirmarVaciado" class="modal-confirmacion">
+                <p>&iquest;Vaciar el carrito? Se eliminaran todos los productos que agregaste.</p>
+                <div class="modal-confirmacion-acciones">
+                    <button type="button" class="boton secundario" id="botonCancelarVaciado">Cancelar</button>
+                    <button type="button" class="boton peligro" id="botonConfirmarVaciado">Si, vaciar</button>
+                </div>
+            </dialog>
         </c:otherwise>
     </c:choose>
 </div>
 
 <%@ include file="_footer.jspf" %>
 <script src="${pageContext.request.contextPath}/assets/js/efectos.js" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/carrito.js" defer></script>
 </body>
 </html>

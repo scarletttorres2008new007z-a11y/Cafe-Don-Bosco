@@ -330,6 +330,26 @@
         });
     }
 
+    // ---------- Ripple (onda concentrica al hacer clic) ----------
+    function iniciarRipple() {
+        document.querySelectorAll('.boton-ripple').forEach(function (boton) {
+            boton.addEventListener('click', function (evento) {
+                var rect = boton.getBoundingClientRect();
+                var diametro = Math.max(rect.width, rect.height);
+                var circulo = document.createElement('span');
+                circulo.className = 'ripple-circulo';
+                circulo.style.width = diametro + 'px';
+                circulo.style.height = diametro + 'px';
+                circulo.style.left = (evento.clientX - rect.left - diametro / 2) + 'px';
+                circulo.style.top = (evento.clientY - rect.top - diametro / 2) + 'px';
+                boton.appendChild(circulo);
+                circulo.addEventListener('animationend', function () {
+                    circulo.remove();
+                });
+            });
+        });
+    }
+
     // ---------- Pulso del badge tras la recarga real ----------
     function iniciarPulsoBadgeSiCorresponde() {
         var pulsar = false;
@@ -362,6 +382,7 @@
             iniciarCursorMagnetico,
             iniciarOdometros,
             iniciarFlyToCart,
+            iniciarRipple,
             iniciarPulsoBadgeSiCorresponde
         ];
         modulos.forEach(function (modulo) {

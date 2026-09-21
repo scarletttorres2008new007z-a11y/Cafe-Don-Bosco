@@ -234,6 +234,50 @@
     }
 }
 
+/* ---------- Ripple (onda concentrica al hacer clic) ---------- */
+.boton-ripple {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple-circulo {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.55);
+    transform: scale(0);
+    animation: rippleExpandir 0.6s ease-out;
+    pointer-events: none;
+}
+
+@keyframes rippleExpandir {
+    to {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+/* ---------- Modal de confirmacion generico ---------- */
+.modal-confirmacion {
+    border: none;
+    border-radius: var(--radio-lg);
+    padding: 24px;
+    max-width: 360px;
+    width: calc(100% - 40px);
+    box-shadow: var(--sombra-flotante);
+}
+
+.modal-confirmacion::backdrop {
+    background-color: rgba(28, 18, 12, 0.55);
+    backdrop-filter: blur(2px);
+}
+
+.modal-confirmacion-acciones {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    justify-content: flex-end;
+}
+
 /* ---------- Skeleton loading ---------- */
 .skeleton-bloque {
     background: linear-gradient(90deg, var(--color-crema-oscura) 25%, var(--color-borde) 37%, var(--color-crema-oscura) 63%);

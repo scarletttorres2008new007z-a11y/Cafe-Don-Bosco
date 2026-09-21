@@ -589,6 +589,94 @@
     color: var(--color-blanco);
 }
 
+/* Checkout: baraja de pasos con transicion 3D */
+.checkout-stack {
+    perspective: 1200px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.paso-checkout-tarjeta .paso-checkout-encabezado {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: default;
+}
+
+.paso-checkout-tarjeta .paso-checkout-encabezado .numero {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: var(--color-crema-oscura);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.paso-checkout-tarjeta.activo .paso-checkout-encabezado .numero {
+    background-color: var(--color-cobre);
+    color: var(--color-blanco);
+}
+
+.paso-checkout-tarjeta .paso-checkout-contenido {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transform: scale(0.95) translateY(-10px);
+    transform-origin: top;
+    transition: max-height 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+}
+
+.paso-checkout-tarjeta.activo .paso-checkout-contenido {
+    max-height: 2000px;
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+    margin-top: 16px;
+}
+
+.paso-checkout-tarjeta.completado .paso-checkout-encabezado .numero::after {
+    content: "\2713";
+}
+
+/* Validacion en tiempo real */
+.campo .indicador-validacion {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.85rem;
+}
+
+.campo.campo-valido input {
+    border-color: var(--color-exito);
+}
+
+.campo.campo-valido .indicador-validacion {
+    color: var(--color-exito);
+}
+
+.campo.campo-invalido input {
+    border-color: var(--color-error);
+}
+
+.campo.campo-invalido .indicador-validacion {
+    color: var(--color-error);
+}
+
+/* Radio cards (metodo de pago / tipo de entrega) */
+.opciones-radio label {
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.opciones-radio label:has(input:checked) {
+    border-color: var(--color-cobre);
+    background-color: var(--color-crema-oscura);
+    font-weight: bold;
+}
+
 /* Confirmacion */
 .confirmacion-caja {
     max-width: 560px;
@@ -627,14 +715,124 @@
     color: #7a6a5c;
 }
 
+/* Stepper de estado del pedido */
+.order-status-stepper {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
+    margin: 22px 0;
+}
+
+.paso-estado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 84px;
+}
+
+.paso-estado .icono-estado {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background-color: var(--color-crema-oscura);
+    color: var(--color-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.paso-estado.completado .icono-estado {
+    background-color: var(--color-exito);
+    color: var(--color-blanco);
+}
+
+.paso-estado.actual .icono-estado {
+    background-color: var(--color-cobre);
+    color: var(--color-blanco);
+    animation: pulsoEstadoActual 1.6s ease-in-out infinite;
+}
+
+.paso-estado span:last-child {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    text-align: center;
+}
+
+.paso-estado.completado span:last-child,
+.paso-estado.actual span:last-child {
+    color: var(--color-cafe);
+    font-weight: bold;
+}
+
+.linea-estado {
+    flex: 1;
+    height: 3px;
+    background-color: var(--color-crema-oscura);
+    max-width: 60px;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+}
+
+.linea-estado.completada {
+    background-color: var(--color-exito);
+}
+
+@keyframes pulsoEstadoActual {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(111, 69, 24, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(111, 69, 24, 0);
+    }
+}
+
 /* Ticket */
 .ticket {
     max-width: 380px;
     margin: 30px auto;
     background-color: var(--color-blanco);
-    border-radius: var(--radio-md);
+    border-radius: var(--radio-md) var(--radio-md) 0 0;
     box-shadow: var(--sombra-flotante);
     padding: 28px;
+    padding-bottom: 40px;
+    position: relative;
+    font-family: 'Courier New', Courier, monospace;
+    animation: papelDeslizar 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ticket::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -9px;
+    height: 18px;
+    background-color: var(--color-blanco);
+    clip-path: polygon(0% 0%, 4% 100%, 8% 0%, 12% 100%, 16% 0%, 20% 100%, 24% 0%, 28% 100%, 32% 0%, 36% 100%, 40% 0%, 44% 100%, 48% 0%, 52% 100%, 56% 0%, 60% 100%, 64% 0%, 68% 100%, 72% 0%, 76% 100%, 80% 0%, 84% 100%, 88% 0%, 92% 100%, 96% 0%, 100% 100%);
+}
+
+@keyframes papelDeslizar {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ticket {
+        animation: none;
+    }
+    .paso-estado.actual .icono-estado {
+        animation: none;
+    }
 }
 
 .ticket .encabezado-ticket {
@@ -685,6 +883,11 @@
     .ticket {
         box-shadow: none;
         margin: 0;
+        animation: none;
+    }
+
+    .ticket::after {
+        display: none;
     }
 }
 

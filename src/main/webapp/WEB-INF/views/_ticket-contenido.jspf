@@ -6,6 +6,8 @@
         <h3 style="font-family: var(--fuente-interfaz); font-size:0.95rem;">TICKET DE COMPRA</h3>
     </div>
 
+    <%@ include file="tienda/_stepper-estado.jspf" %>
+
     <p>
         <strong>Numero de pedido:</strong> #000${venta.id}<br>
         <strong>Fecha:</strong> ${venta.fechaFormateada}<br>
