@@ -16,4 +16,10 @@ public interface TicketService {
      * rutas protegidas para el administrador.
      */
     VentaResponseDTO obtenerPorIdAdmin(int ventaId);
+
+    /** Genera el PDF del ticket y lo encola para enviarlo por correo (no bloquea). */
+    void enviarPorCorreo(VentaResponseDTO ticket, String correoDestino);
+
+    /** Enlace "click-to-chat" de WhatsApp con el resumen del pedido ya redactado. */
+    String generarEnlaceWhatsApp(VentaResponseDTO ticket, String telefonoDestino);
 }
