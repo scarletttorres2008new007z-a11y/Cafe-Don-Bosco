@@ -1,5 +1,6 @@
 package sv.udb.cafedonbosco.dao.impl;
 
+import sv.udb.cafedonbosco.dao.DetalleVentaOpcionDAO;
 import sv.udb.cafedonbosco.dao.VentaDAO;
 import sv.udb.cafedonbosco.dto.request.VentaFiltroDTO;
 import sv.udb.cafedonbosco.exception.ErrorInternoException;
@@ -24,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VentaDAOImpl implements VentaDAO {
+
+    private final DetalleVentaOpcionDAO detalleVentaOpcionDAO = new DetalleVentaOpcionDAOImpl();
 
     private static final String COLUMNAS_VENTA =
             "id, usuario_id, tipo_venta, estado, subtotal, envio, total, metodo_pago, "
@@ -76,7 +79,7 @@ public class VentaDAOImpl implements VentaDAO {
         String sql = "INSERT INTO detalle_venta "
                 + "(venta_id, producto_id, nombre_producto, cantidad, precio_unitario, subtotal) "
                 + "VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement stmt = conexion.prepareStatement(sql)) {
+        try (PreparedStatement stmt = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, ventaId);
             stmt.setInt(2, detalle.getProductoId());
             stmt.setString(3, detalle.getNombreProducto());
@@ -84,6 +87,11 @@ public class VentaDAOImpl implements VentaDAO {
             stmt.setBigDecimal(5, detalle.getPrecioUnitario());
             stmt.setBigDecimal(6, detalle.getSubtotal());
             stmt.executeUpdate();
+            try (ResultSet claves = stmt.getGeneratedKeys()) {
+                if (claves.next()) {
+                    detalle.setId(claves.getInt(1));
+                }
+            }
         } catch (SQLException e) {
             throw new ErrorInternoException("Error al registrar el detalle de la venta", e);
         }
@@ -185,6 +193,7 @@ public class VentaDAOImpl implements VentaDAO {
                     );
                     detalle.setId(rs.getInt("id"));
                     detalle.setVentaId(rs.getInt("venta_id"));
+                    detalle.setOpciones(detalleVentaOpcionDAO.listarPorDetalle(conexion, detalle.getId()));
                     detalles.add(detalle);
                 }
             }

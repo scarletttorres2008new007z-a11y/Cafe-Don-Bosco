@@ -1,10 +1,12 @@
 package sv.udb.cafedonbosco.service.impl;
 
 import sv.udb.cafedonbosco.dao.BitacoraDAO;
+import sv.udb.cafedonbosco.dao.DetalleVentaOpcionDAO;
 import sv.udb.cafedonbosco.dao.InventarioDAO;
 import sv.udb.cafedonbosco.dao.ProductoDAO;
 import sv.udb.cafedonbosco.dao.VentaDAO;
 import sv.udb.cafedonbosco.dao.impl.BitacoraDAOImpl;
+import sv.udb.cafedonbosco.dao.impl.DetalleVentaOpcionDAOImpl;
 import sv.udb.cafedonbosco.dao.impl.InventarioDAOImpl;
 import sv.udb.cafedonbosco.dao.impl.ProductoDAOImpl;
 import sv.udb.cafedonbosco.dao.impl.VentaDAOImpl;
@@ -13,6 +15,7 @@ import sv.udb.cafedonbosco.dto.request.CheckoutRequestDTO;
 import sv.udb.cafedonbosco.dto.request.VentaFiltroDTO;
 import sv.udb.cafedonbosco.dto.request.VentaPresencialRequestDTO;
 import sv.udb.cafedonbosco.dto.response.DetalleVentaResponseDTO;
+import sv.udb.cafedonbosco.dto.response.OpcionSeleccionadaResponseDTO;
 import sv.udb.cafedonbosco.dto.response.VentaResponseDTO;
 import sv.udb.cafedonbosco.exception.AccesoDenegadoException;
 import sv.udb.cafedonbosco.exception.ErrorInternoException;
@@ -30,8 +33,10 @@ import sv.udb.cafedonbosco.model.MovimientoInventario;
 import sv.udb.cafedonbosco.model.Producto;
 import sv.udb.cafedonbosco.model.TipoMovimiento;
 import sv.udb.cafedonbosco.model.TipoVenta;
+import sv.udb.cafedonbosco.model.OpcionSeleccionada;
 import sv.udb.cafedonbosco.model.Venta;
 import sv.udb.cafedonbosco.service.HorarioAtencionService;
+import sv.udb.cafedonbosco.service.PersonalizacionService;
 import sv.udb.cafedonbosco.service.VentaService;
 import sv.udb.cafedonbosco.util.ConexionBD;
 import sv.udb.cafedonbosco.util.Constantes;
@@ -59,6 +64,8 @@ public class VentaServiceImpl implements VentaService {
     private final InventarioDAO inventarioDAO;
     private final BitacoraDAO bitacoraDAO;
     private final HorarioAtencionService horarioAtencionService;
+    private final PersonalizacionService personalizacionService;
+    private final DetalleVentaOpcionDAO detalleVentaOpcionDAO;
 
     public VentaServiceImpl() {
         this.ventaDAO = new VentaDAOImpl();
@@ -66,6 +73,8 @@ public class VentaServiceImpl implements VentaService {
         this.inventarioDAO = new InventarioDAOImpl();
         this.bitacoraDAO = new BitacoraDAOImpl();
         this.horarioAtencionService = new HorarioAtencionServiceImpl();
+        this.personalizacionService = new PersonalizacionServiceImpl();
+        this.detalleVentaOpcionDAO = new DetalleVentaOpcionDAOImpl();
     }
 
     @Override
@@ -98,7 +107,9 @@ public class VentaServiceImpl implements VentaService {
 
         List<DetalleVenta> detalles = new ArrayList<>();
         for (CarritoItem item : carrito.getItems().values()) {
-            detalles.add(new DetalleVenta(item.getProductoId(), item.getNombreProducto(), item.getCantidad(), null, null));
+            DetalleVenta detalle = new DetalleVenta(item.getProductoId(), item.getNombreProducto(), item.getCantidad(), null, null);
+            detalle.setOpcionIdsSolicitados(extraerOpcionIds(item.getOpciones()));
+            detalles.add(detalle);
         }
 
         BigDecimal envio = Constantes.ENTREGA_DOMICILIO.equalsIgnoreCase(datos.getTipoEntrega())
@@ -138,7 +149,9 @@ public class VentaServiceImpl implements VentaService {
             if (!ValidacionUtil.esCantidadValida(item.getCantidad()) || item.getProductoId() == null) {
                 throw new ValidacionException("Cada producto de la venta necesita un id y una cantidad valida.");
             }
-            detalles.add(new DetalleVenta(item.getProductoId(), null, item.getCantidad(), null, null));
+            DetalleVenta detalle = new DetalleVenta(item.getProductoId(), null, item.getCantidad(), null, null);
+            detalle.setOpcionIdsSolicitados(item.getOpcionIds());
+            detalles.add(detalle);
         }
 
         Venta registrada = registrarConTransaccion(venta, detalles, BigDecimal.ZERO, usuarioAdminId);
@@ -184,13 +197,26 @@ public class VentaServiceImpl implements VentaService {
                 movimiento.setUsuarioId(usuarioId);
                 movimientos.add(movimiento);
 
-                BigDecimal precioVigente = producto.getPrecio();
+                // Las opciones tambien se vuelven a resolver aqui (nunca se
+                // confia en lo que traiga el carrito/la solicitud): si una
+                // opcion se desactivo o cambio de precio entre que se agrego
+                // al carrito y el checkout, esto usa el estado vigente.
+                List<OpcionSeleccionada> opciones = personalizacionService.validarYResolverOpciones(
+                        producto.getId(), solicitado.getOpcionIdsSolicitados());
+                BigDecimal precioAdicionalOpciones = BigDecimal.ZERO;
+                for (OpcionSeleccionada opcion : opciones) {
+                    precioAdicionalOpciones = precioAdicionalOpciones.add(opcion.getPrecioAdicional());
+                }
+
+                BigDecimal precioVigente = producto.getPrecio().add(precioAdicionalOpciones);
                 BigDecimal subtotalLinea = precioVigente.multiply(BigDecimal.valueOf(solicitado.getCantidad()));
                 subtotal = subtotal.add(subtotalLinea);
 
-                detallesFinales.add(new DetalleVenta(
+                DetalleVenta detalleFinal = new DetalleVenta(
                         producto.getId(), producto.getNombre(), solicitado.getCantidad(), precioVigente, subtotalLinea
-                ));
+                );
+                detalleFinal.setOpciones(opciones);
+                detallesFinales.add(detalleFinal);
             }
 
             venta.setSubtotal(subtotal);
@@ -208,6 +234,9 @@ public class VentaServiceImpl implements VentaService {
             for (int i = 0; i < detallesFinales.size(); i++) {
                 DetalleVenta detalle = detallesFinales.get(i);
                 ventaDAO.crearDetalle(conexion, detalle, venta.getId());
+                for (OpcionSeleccionada opcion : detalle.getOpciones()) {
+                    detalleVentaOpcionDAO.registrar(conexion, detalle.getId(), opcion);
+                }
 
                 MovimientoInventario movimiento = movimientos.get(i);
                 movimiento.setVentaId(venta.getId());
@@ -524,6 +553,14 @@ public class VentaServiceImpl implements VentaService {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
+    private List<Integer> extraerOpcionIds(List<OpcionSeleccionada> opciones) {
+        List<Integer> ids = new ArrayList<>();
+        for (OpcionSeleccionada opcion : opciones) {
+            ids.add(opcion.getOpcionId());
+        }
+        return ids;
+    }
+
     private VentaResponseDTO aResponseDTO(Venta venta) {
         VentaResponseDTO dto = new VentaResponseDTO();
         dto.setId(venta.getId());
@@ -549,10 +586,18 @@ public class VentaServiceImpl implements VentaService {
 
         List<DetalleVentaResponseDTO> detalles = new ArrayList<>();
         for (DetalleVenta detalle : venta.getDetalles()) {
-            detalles.add(new DetalleVentaResponseDTO(
+            DetalleVentaResponseDTO detalleDTO = new DetalleVentaResponseDTO(
                     detalle.getProductoId(), detalle.getNombreProducto(), detalle.getCantidad(),
                     detalle.getPrecioUnitario(), detalle.getSubtotal()
-            ));
+            );
+            List<OpcionSeleccionadaResponseDTO> opciones = new ArrayList<>();
+            for (OpcionSeleccionada opcion : detalle.getOpciones()) {
+                opciones.add(new OpcionSeleccionadaResponseDTO(
+                        opcion.getOpcionId(), opcion.getNombreGrupo(), opcion.getNombreOpcion(), opcion.getPrecioAdicional()
+                ));
+            }
+            detalleDTO.setOpciones(opciones);
+            detalles.add(detalleDTO);
         }
         dto.setDetalles(detalles);
         return dto;

@@ -13,14 +13,18 @@ import sv.udb.cafedonbosco.exception.ValidacionException;
 import sv.udb.cafedonbosco.model.Carrito;
 import sv.udb.cafedonbosco.model.CarritoItem;
 import sv.udb.cafedonbosco.model.Inventario;
+import sv.udb.cafedonbosco.model.OpcionSeleccionada;
 import sv.udb.cafedonbosco.model.Producto;
 import sv.udb.cafedonbosco.service.CarritoService;
+import sv.udb.cafedonbosco.service.PersonalizacionService;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,12 +34,14 @@ class CarritoServiceImplTest {
     private ProductoDAO productoDAO;
     @Mock
     private InventarioDAO inventarioDAO;
+    @Mock
+    private PersonalizacionService personalizacionService;
 
     private CarritoService carritoService;
 
     @BeforeEach
     void configurar() {
-        carritoService = new CarritoServiceImpl(productoDAO, inventarioDAO);
+        carritoService = new CarritoServiceImpl(productoDAO, inventarioDAO, personalizacionService);
     }
 
     private Producto productoActivo(int id, String nombre, String precio) {
@@ -161,5 +167,32 @@ class CarritoServiceImplTest {
         carritoService.obtenerResumen(carrito);
 
         assertEquals(2, carrito.getItems().get(1).getCantidad());
+    }
+
+    @Test
+    void agregarProductoSinOpcionesNuncaConsultaPersonalizacionService() {
+        when(productoDAO.buscarPorId(1)).thenReturn(productoActivo(1, "Cafe Latte", "2.50"));
+        when(inventarioDAO.buscarPorProducto(1)).thenReturn(inventarioConStock(1, 10));
+
+        Carrito carrito = new Carrito();
+        carritoService.agregarProducto(carrito, 1, 1, null);
+        carritoService.agregarProducto(carrito, 1, 1, List.of());
+
+        verifyNoInteractions(personalizacionService);
+        assertTrue(carrito.getItems().get(1).getOpciones().isEmpty());
+    }
+
+    @Test
+    void agregarProductoConOpcionesGuardaLaFotografiaResueltaEnElItem() {
+        when(productoDAO.buscarPorId(1)).thenReturn(productoActivo(1, "Cafe Latte", "2.50"));
+        when(inventarioDAO.buscarPorProducto(1)).thenReturn(inventarioConStock(1, 10));
+        OpcionSeleccionada leche = new OpcionSeleccionada(5, "Tipo de leche", "Leche de almendra", new BigDecimal("0.50"));
+        when(personalizacionService.validarYResolverOpciones(1, List.of(5))).thenReturn(List.of(leche));
+
+        Carrito carrito = new Carrito();
+        carritoService.agregarProducto(carrito, 1, 1, List.of(5));
+
+        assertEquals(1, carrito.getItems().get(1).getOpciones().size());
+        assertEquals(new BigDecimal("3.00"), carrito.getItems().get(1).getSubtotal());
     }
 }

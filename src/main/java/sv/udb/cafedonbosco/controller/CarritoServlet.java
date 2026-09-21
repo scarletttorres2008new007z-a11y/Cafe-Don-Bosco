@@ -41,7 +41,7 @@ public class CarritoServlet extends BaseServlet {
                 throw new ValidacionException("Debes indicar el producto y la cantidad.");
             }
             Carrito carrito = SessionUtil.obtenerOCrearCarrito(request);
-            carritoService.agregarProducto(carrito, datos.getProductoId(), datos.getCantidad());
+            carritoService.agregarProducto(carrito, datos.getProductoId(), datos.getCantidad(), datos.getOpcionIds());
             JsonUtil.exito(response, HttpServletResponse.SC_OK, "Producto agregado al carrito", carritoService.obtenerResumen(carrito));
         } catch (Exception e) {
             manejarError(response, e);

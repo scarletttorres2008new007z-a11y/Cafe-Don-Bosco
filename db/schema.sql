@@ -261,6 +261,69 @@ CREATE TABLE IF NOT EXISTS horario_atencion (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- Personalizacion de productos: un producto puede ofrecer uno o mas
+-- grupos de opciones (ej. "Tipo de leche", "Nivel de azucar"). Un grupo
+-- de seleccion_multiple=FALSE solo admite elegir una opcion (tipo de
+-- leche); uno con seleccion_multiple=TRUE admite varias (jarabes
+-- extra). obligatorio=TRUE exige elegir al menos una opcion de ese
+-- grupo antes de poder agregar el producto al carrito.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS grupo_opcion (
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    nombre              VARCHAR(50) NOT NULL UNIQUE,
+    obligatorio         BOOLEAN NOT NULL DEFAULT FALSE,
+    seleccion_multiple  BOOLEAN NOT NULL DEFAULT FALSE,
+    activo              BOOLEAN NOT NULL DEFAULT TRUE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS opcion (
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    grupo_id          INT NOT NULL,
+    nombre            VARCHAR(50) NOT NULL,
+    precio_adicional  DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    activo            BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT fk_opcion_grupo
+        FOREIGN KEY (grupo_id) REFERENCES grupo_opcion(id) ON DELETE CASCADE,
+    CONSTRAINT chk_opcion_precio CHECK (precio_adicional >= 0),
+    CONSTRAINT uk_opcion_grupo_nombre UNIQUE (grupo_id, nombre)
+) ENGINE=InnoDB;
+
+-- Que grupos de opciones ofrece cada producto (un grupo se puede
+-- reutilizar en varios productos, ej. "Tipo de leche" en todos los
+-- cafes; un producto puede tener varios grupos, ej. cafe + tipo de
+-- leche + nivel de azucar).
+CREATE TABLE IF NOT EXISTS producto_grupo_opcion (
+    producto_id  INT NOT NULL,
+    grupo_id     INT NOT NULL,
+    PRIMARY KEY (producto_id, grupo_id),
+    CONSTRAINT fk_productogrupo_producto
+        FOREIGN KEY (producto_id) REFERENCES producto(id) ON DELETE CASCADE,
+    CONSTRAINT fk_productogrupo_grupo
+        FOREIGN KEY (grupo_id) REFERENCES grupo_opcion(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Fotografia de las opciones elegidas en una linea de venta ya
+-- facturada (mismo criterio que detalle_venta.nombre_producto): si la
+-- opcion cambia de nombre o precio despues, el historial de ventas no
+-- debe cambiar retroactivamente. opcion_id puede quedar NULL si la
+-- opcion original se borra mas adelante; el nombre y el precio ya
+-- quedaron copiados aqui.
+CREATE TABLE IF NOT EXISTS detalle_venta_opcion (
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    detalle_venta_id  INT NOT NULL,
+    opcion_id         INT NULL,
+    nombre_grupo      VARCHAR(50) NOT NULL,
+    nombre_opcion     VARCHAR(50) NOT NULL,
+    precio_aplicado   DECIMAL(10,2) NOT NULL,
+    CONSTRAINT fk_detalleventaopcion_detalle
+        FOREIGN KEY (detalle_venta_id) REFERENCES detalle_venta(id) ON DELETE CASCADE,
+    CONSTRAINT fk_detalleventaopcion_opcion
+        FOREIGN KEY (opcion_id) REFERENCES opcion(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_detalleventaopcion_detalle_id ON detalle_venta_opcion(detalle_venta_id);
+
+-- ---------------------------------------------------------------------
 -- Datos iniciales
 -- ---------------------------------------------------------------------
 
@@ -316,3 +379,33 @@ INSERT INTO horario_atencion (dia_semana, nombre_dia, hora_apertura, hora_cierre
     (6, 'SABADO', '07:00:00', '21:30:00'),
     (7, 'DOMINGO', '07:00:00', '19:00:00')
 ON DUPLICATE KEY UPDATE dia_semana = dia_semana;
+
+-- Personalizacion de ejemplo: tipo de leche (seleccion unica, opcional)
+-- y nivel de azucar (seleccion unica, opcional), aplicados a los cafes.
+INSERT INTO grupo_opcion (nombre, obligatorio, seleccion_multiple, activo) VALUES
+    ('Tipo de leche', FALSE, FALSE, TRUE),
+    ('Nivel de azucar', FALSE, FALSE, TRUE)
+ON DUPLICATE KEY UPDATE nombre = nombre;
+
+INSERT INTO opcion (grupo_id, nombre, precio_adicional, activo)
+SELECT id, 'Leche entera', 0.00, TRUE FROM grupo_opcion WHERE nombre = 'Tipo de leche'
+UNION ALL
+SELECT id, 'Leche deslactosada', 0.00, TRUE FROM grupo_opcion WHERE nombre = 'Tipo de leche'
+UNION ALL
+SELECT id, 'Leche de almendra', 0.50, TRUE FROM grupo_opcion WHERE nombre = 'Tipo de leche'
+UNION ALL
+SELECT id, 'Leche de avena', 0.50, TRUE FROM grupo_opcion WHERE nombre = 'Tipo de leche'
+UNION ALL
+SELECT id, 'Normal', 0.00, TRUE FROM grupo_opcion WHERE nombre = 'Nivel de azucar'
+UNION ALL
+SELECT id, 'Sin azucar', 0.00, TRUE FROM grupo_opcion WHERE nombre = 'Nivel de azucar'
+UNION ALL
+SELECT id, 'Extra dulce', 0.00, TRUE FROM grupo_opcion WHERE nombre = 'Nivel de azucar'
+ON DUPLICATE KEY UPDATE nombre = nombre;
+
+INSERT INTO producto_grupo_opcion (producto_id, grupo_id)
+SELECT p.id, g.id
+FROM producto p
+JOIN categoria c ON c.id = p.categoria_id AND c.nombre = 'Cafe'
+JOIN grupo_opcion g ON g.nombre IN ('Tipo de leche', 'Nivel de azucar')
+ON DUPLICATE KEY UPDATE producto_id = producto_id;

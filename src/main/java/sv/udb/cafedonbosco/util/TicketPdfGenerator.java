@@ -7,11 +7,13 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import sv.udb.cafedonbosco.dto.response.DetalleVentaResponseDTO;
+import sv.udb.cafedonbosco.dto.response.OpcionSeleccionadaResponseDTO;
 import sv.udb.cafedonbosco.dto.response.VentaResponseDTO;
 import sv.udb.cafedonbosco.exception.ErrorInternoException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Genera el PDF real del ticket de una venta con PDFBox. Es una
@@ -71,6 +73,9 @@ public final class TicketPdfGenerator {
                                 FormatoUtil.moneda(detalle.getPrecioUnitario()),
                                 FormatoUtil.moneda(detalle.getSubtotal()),
                                 false);
+                        if (!detalle.getOpciones().isEmpty()) {
+                            y = escribirOpciones(contenido, y, detalle.getOpciones());
+                        }
                     }
                 }
 
@@ -154,6 +159,26 @@ public final class TicketPdfGenerator {
         contenido.newLineAtOffset(x, y);
         contenido.showText(sanitizar(texto));
         contenido.endText();
+    }
+
+    private static float escribirOpciones(PDPageContentStream contenido, float y, List<OpcionSeleccionadaResponseDTO> opciones)
+            throws IOException {
+        StringBuilder texto = new StringBuilder();
+        for (OpcionSeleccionadaResponseDTO opcion : opciones) {
+            if (texto.length() > 0) {
+                texto.append(", ");
+            }
+            texto.append(opcion.getNombreOpcion());
+            if (opcion.getPrecioAdicional() != null && opcion.getPrecioAdicional().signum() > 0) {
+                texto.append(" (+$").append(FormatoUtil.moneda(opcion.getPrecioAdicional())).append(")");
+            }
+        }
+        contenido.beginText();
+        contenido.setFont(FUENTE, 8);
+        contenido.newLineAtOffset(MARGEN_IZQUIERDO + 12, y);
+        contenido.showText(sanitizar(recortar(texto.toString(), 55)));
+        contenido.endText();
+        return y - 11;
     }
 
     private static String recortar(String texto, int maximo) {

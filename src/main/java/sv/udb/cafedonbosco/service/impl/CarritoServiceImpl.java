@@ -10,8 +10,10 @@ import sv.udb.cafedonbosco.exception.ValidacionException;
 import sv.udb.cafedonbosco.model.Carrito;
 import sv.udb.cafedonbosco.model.CarritoItem;
 import sv.udb.cafedonbosco.model.Inventario;
+import sv.udb.cafedonbosco.model.OpcionSeleccionada;
 import sv.udb.cafedonbosco.model.Producto;
 import sv.udb.cafedonbosco.service.CarritoService;
+import sv.udb.cafedonbosco.service.PersonalizacionService;
 import sv.udb.cafedonbosco.util.ValidacionUtil;
 
 import java.math.BigDecimal;
@@ -24,27 +26,44 @@ public class CarritoServiceImpl implements CarritoService {
 
     private final ProductoDAO productoDAO;
     private final InventarioDAO inventarioDAO;
+    private final PersonalizacionService personalizacionService;
 
     public CarritoServiceImpl() {
-        this(new ProductoDAOImpl(), new InventarioDAOImpl());
+        this(new ProductoDAOImpl(), new InventarioDAOImpl(), new PersonalizacionServiceImpl());
     }
 
     /** Permite inyectar DAOs de prueba (Mockito) sin tocar una base de datos real. */
     public CarritoServiceImpl(ProductoDAO productoDAO, InventarioDAO inventarioDAO) {
+        this(productoDAO, inventarioDAO, new PersonalizacionServiceImpl());
+    }
+
+    public CarritoServiceImpl(ProductoDAO productoDAO, InventarioDAO inventarioDAO, PersonalizacionService personalizacionService) {
         this.productoDAO = productoDAO;
         this.inventarioDAO = inventarioDAO;
+        this.personalizacionService = personalizacionService;
     }
 
     @Override
     public void agregarProducto(Carrito carrito, int productoId, int cantidad) {
+        agregarProducto(carrito, productoId, cantidad, null);
+    }
+
+    @Override
+    public void agregarProducto(Carrito carrito, int productoId, int cantidad, List<Integer> opcionIds) {
         if (!ValidacionUtil.esCantidadValida(cantidad)) {
             throw new ValidacionException("La cantidad debe ser mayor a 0.");
         }
         CarritoItem existente = carrito.getItems().get(productoId);
         int cantidadTotalDeseada = (existente != null ? existente.getCantidad() : 0) + cantidad;
         Producto producto = validarProductoDisponible(productoId, cantidadTotalDeseada);
+        // Solo se consulta PersonalizacionService cuando el cliente realmente
+        // envio opciones: asi un carrito sin personalizacion (todo el flujo
+        // JSP existente) no depende de esa capa para nada.
+        List<OpcionSeleccionada> opciones = (opcionIds != null && !opcionIds.isEmpty())
+                ? personalizacionService.validarYResolverOpciones(productoId, opcionIds)
+                : new ArrayList<>();
         carrito.agregarProducto(new CarritoItem(
-                producto.getId(), producto.getNombre(), producto.getPrecio(), cantidad, producto.getImagen()
+                producto.getId(), producto.getNombre(), producto.getPrecio(), cantidad, producto.getImagen(), opciones
         ));
     }
 

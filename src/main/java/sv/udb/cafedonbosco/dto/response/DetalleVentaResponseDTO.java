@@ -3,6 +3,8 @@ package sv.udb.cafedonbosco.dto.response;
 import sv.udb.cafedonbosco.util.FormatoUtil;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DetalleVentaResponseDTO {
 
@@ -11,6 +13,7 @@ public class DetalleVentaResponseDTO {
     private Integer cantidad;
     private BigDecimal precioUnitario;
     private BigDecimal subtotal;
+    private List<OpcionSeleccionadaResponseDTO> opciones = new ArrayList<>();
 
     public DetalleVentaResponseDTO() {
     }
@@ -69,5 +72,13 @@ public class DetalleVentaResponseDTO {
 
     public String getSubtotalFormateado() {
         return FormatoUtil.moneda(subtotal);
+    }
+
+    public List<OpcionSeleccionadaResponseDTO> getOpciones() {
+        return opciones;
+    }
+
+    public void setOpciones(List<OpcionSeleccionadaResponseDTO> opciones) {
+        this.opciones = opciones != null ? opciones : new ArrayList<>();
     }
 }

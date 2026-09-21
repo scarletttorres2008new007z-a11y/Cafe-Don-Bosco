@@ -1,6 +1,7 @@
 package sv.udb.cafedonbosco.service.impl;
 
 import sv.udb.cafedonbosco.dto.response.DetalleVentaResponseDTO;
+import sv.udb.cafedonbosco.dto.response.OpcionSeleccionadaResponseDTO;
 import sv.udb.cafedonbosco.dto.response.VentaResponseDTO;
 import sv.udb.cafedonbosco.exception.ValidacionException;
 import sv.udb.cafedonbosco.model.EstadoVenta;
@@ -53,6 +54,17 @@ public class TicketServiceImpl implements TicketService {
                     productos.append(", ");
                 }
                 productos.append(detalle.getCantidad()).append("x ").append(detalle.getNombreProducto());
+                if (detalle.getOpciones() != null && !detalle.getOpciones().isEmpty()) {
+                    productos.append(" (");
+                    for (int i = 0; i < detalle.getOpciones().size(); i++) {
+                        if (i > 0) {
+                            productos.append(", ");
+                        }
+                        OpcionSeleccionadaResponseDTO opcion = detalle.getOpciones().get(i);
+                        productos.append(opcion.getNombreOpcion());
+                    }
+                    productos.append(")");
+                }
             }
         }
         return "Hola! Confirmacion de pedido #" + ticket.getId() + " en Cafe Don Bosco.\n"

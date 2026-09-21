@@ -1,6 +1,8 @@
 package sv.udb.cafedonbosco.model;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DetalleVenta {
 
@@ -11,6 +13,14 @@ public class DetalleVenta {
     private Integer cantidad;
     private BigDecimal precioUnitario;
     private BigDecimal subtotal;
+    private List<OpcionSeleccionada> opciones = new ArrayList<>();
+    /**
+     * Ids de opciones pedidas para esta linea, antes de resolverse contra
+     * PersonalizacionService dentro de la transaccion. Solo se usa como
+     * entrada de VentaServiceImpl.registrarConTransaccion; no se persiste
+     * (lo que se guarda es "opciones", ya resuelto).
+     */
+    private List<Integer> opcionIdsSolicitados = new ArrayList<>();
 
     public DetalleVenta() {
     }
@@ -83,5 +93,21 @@ public class DetalleVenta {
 
     public void setSubtotal(BigDecimal subtotal) {
         this.subtotal = subtotal;
+    }
+
+    public List<OpcionSeleccionada> getOpciones() {
+        return opciones;
+    }
+
+    public void setOpciones(List<OpcionSeleccionada> opciones) {
+        this.opciones = opciones != null ? opciones : new ArrayList<>();
+    }
+
+    public List<Integer> getOpcionIdsSolicitados() {
+        return opcionIdsSolicitados;
+    }
+
+    public void setOpcionIdsSolicitados(List<Integer> opcionIdsSolicitados) {
+        this.opcionIdsSolicitados = opcionIdsSolicitados != null ? opcionIdsSolicitados : new ArrayList<>();
     }
 }

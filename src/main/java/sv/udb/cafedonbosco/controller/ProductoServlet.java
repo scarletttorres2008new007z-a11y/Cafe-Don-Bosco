@@ -8,7 +8,9 @@ import sv.udb.cafedonbosco.dto.response.ProductoAdminResponseDTO;
 import sv.udb.cafedonbosco.dto.response.UsuarioResponseDTO;
 import sv.udb.cafedonbosco.exception.AccesoDenegadoException;
 import sv.udb.cafedonbosco.exception.ValidacionException;
+import sv.udb.cafedonbosco.service.PersonalizacionService;
 import sv.udb.cafedonbosco.service.ProductoService;
+import sv.udb.cafedonbosco.service.impl.PersonalizacionServiceImpl;
 import sv.udb.cafedonbosco.service.impl.ProductoServiceImpl;
 import sv.udb.cafedonbosco.util.JsonUtil;
 import sv.udb.cafedonbosco.util.SessionUtil;
@@ -28,6 +30,7 @@ import java.util.Map;
 public class ProductoServlet extends BaseServlet {
 
     private final ProductoService productoService = new ProductoServiceImpl();
+    private final PersonalizacionService personalizacionService = new PersonalizacionServiceImpl();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -52,6 +55,12 @@ public class ProductoServlet extends BaseServlet {
             if (segmentos.length == 2 && "relacionados".equals(segmentos[1])) {
                 JsonUtil.exito(response, HttpServletResponse.SC_OK, "Productos relacionados",
                         productoService.listarRelacionados(id, 4));
+                return;
+            }
+
+            if (segmentos.length == 2 && "opciones".equals(segmentos[1])) {
+                JsonUtil.exito(response, HttpServletResponse.SC_OK, "Opciones de personalizacion obtenidas",
+                        personalizacionService.listarGruposDeProducto(id));
                 return;
             }
 

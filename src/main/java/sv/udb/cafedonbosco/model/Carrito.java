@@ -18,6 +18,11 @@ public class Carrito implements Serializable {
         CarritoItem existente = items.get(nuevo.getProductoId());
         if (existente != null) {
             existente.setCantidad(existente.getCantidad() + nuevo.getCantidad());
+            // El carrito solo guarda una linea por producto: si el cliente
+            // vuelve a agregar el mismo producto con una personalizacion
+            // distinta, la nueva reemplaza a la anterior para toda la
+            // linea (no se separan en dos lineas independientes).
+            existente.setOpciones(nuevo.getOpciones());
         } else {
             items.put(nuevo.getProductoId(), nuevo);
         }
