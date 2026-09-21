@@ -199,6 +199,17 @@
     }
 
     // ---------- Odometro: cuenta desde 0 hasta el valor real ya renderizado ----------
+    /**
+     * Si el precio cambia varias veces seguidas (ej. el usuario alterna
+     * opciones de personalizacion rapido), cada llamada arranca su propio
+     * requestAnimationFrame; sin coordinacion, la animacion mas vieja podia
+     * seguir escribiendo texto despues de que una mas nueva ya habia
+     * terminado, dejando el numero final equivocado. Un contador de
+     * ejecucion por elemento hace que solo la ultima animacion iniciada
+     * sobre ese elemento pueda seguir escribiendo.
+     */
+    var contadorOdometro = 0;
+
     function animarOdometroElemento(el) {
         var textoOriginal = el.textContent.trim();
         var coincidencia = textoOriginal.match(/\d[\d,]*\.?\d*/);
@@ -215,8 +226,13 @@
         var sufijo = textoOriginal.slice(coincidencia.index + crudo.length);
         var duracionMs = 700;
         var inicio = null;
+        var miEjecucion = String(++contadorOdometro);
+        el.dataset.odometroEjecucion = miEjecucion;
 
         function paso(marca) {
+            if (el.dataset.odometroEjecucion !== miEjecucion) {
+                return;
+            }
             if (inicio === null) {
                 inicio = marca;
             }
@@ -241,7 +257,7 @@
     function buscarOrigenDeVuelo(form) {
         var nodo = form.parentElement;
         while (nodo && nodo !== document.body) {
-            var candidato = nodo.querySelector('.imagen-producto, .detalle-imagen');
+            var candidato = nodo.querySelector('.imagen-producto, .detalle-imagen, .beverage-layer-container, .detalle-imagen-foto');
             if (candidato) {
                 return candidato;
             }

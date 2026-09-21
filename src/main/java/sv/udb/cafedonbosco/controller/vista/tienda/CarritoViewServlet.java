@@ -13,6 +13,8 @@ import sv.udb.cafedonbosco.service.impl.CarritoServiceImpl;
 import sv.udb.cafedonbosco.util.SessionUtil;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Carrito de compras del consumidor. No requiere sesion iniciada: vive
@@ -43,7 +45,7 @@ public class CarritoViewServlet extends TiendaBaseServlet {
                 case "agregar" -> {
                     int productoId = Integer.parseInt(request.getParameter("productoId"));
                     int cantidad = parametroCantidad(request, 1);
-                    carritoService.agregarProducto(carrito, productoId, cantidad);
+                    carritoService.agregarProducto(carrito, productoId, cantidad, parametroOpcionIds(request));
                 }
                 case "decrementar" -> {
                     int productoId = Integer.parseInt(request.getParameter("productoId"));
@@ -85,6 +87,23 @@ public class CarritoViewServlet extends TiendaBaseServlet {
             return volver;
         }
         return contexto + "/tienda/carrito";
+    }
+
+    /** El form clasico envia un "opcionId" por cada pill/checkbox marcado; puede no venir ninguno. */
+    private List<Integer> parametroOpcionIds(HttpServletRequest request) {
+        String[] valores = request.getParameterValues("opcionId");
+        if (valores == null || valores.length == 0) {
+            return null;
+        }
+        List<Integer> ids = new ArrayList<>();
+        for (String valor : valores) {
+            try {
+                ids.add(Integer.parseInt(valor));
+            } catch (NumberFormatException e) {
+                // Un valor no numerico no deberia llegar desde el formulario propio; se ignora.
+            }
+        }
+        return ids;
     }
 
     private int parametroCantidad(HttpServletRequest request, int porDefecto) {

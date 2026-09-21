@@ -333,6 +333,91 @@
     height: 34px;
 }
 
+/* Personalizacion en la ficha de producto */
+.personalizacion-producto {
+    margin: 18px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.grupo-opcion-titulo {
+    display: block;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.pill-opciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pill-opcion {
+    position: relative;
+}
+
+.pill-opcion input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+}
+
+.pill-opcion span {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--color-borde);
+    background-color: var(--color-blanco);
+    font-size: 0.85rem;
+    color: var(--color-cafe);
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.pill-opcion input:checked + span {
+    background-color: var(--color-cobre);
+    border-color: var(--color-cobre);
+    color: var(--color-blanco);
+}
+
+.pill-opcion input:focus-visible + span {
+    outline: 2px solid var(--color-dorado);
+    outline-offset: 2px;
+}
+
+/* Simulador SVG de capas de bebida */
+.beverage-layer-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-crema-oscura);
+    border-radius: var(--radio-lg);
+    padding: 20px;
+}
+
+.beverage-layer-container svg {
+    max-width: 100%;
+    height: auto;
+}
+
+#layerSyrup,
+#layerMilk,
+#layerEspresso,
+#layerFoam {
+    transition: fill 0.4s ease, opacity 0.4s ease;
+}
+
+.detalle-imagen-foto {
+    width: 100%;
+    height: 320px;
+    object-fit: cover;
+    border-radius: var(--radio-lg);
+}
+
 /* Detalle de producto */
 .detalle-layout {
     display: grid;

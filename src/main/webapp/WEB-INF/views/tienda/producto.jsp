@@ -26,13 +26,72 @@
         </c:when>
         <c:otherwise>
             <div class="detalle-layout" style="margin-top:20px;">
-                <div class="detalle-imagen">&#9749;</div>
+                <c:choose>
+                    <c:when test="${not empty gruposOpcion}">
+                        <div class="beverage-layer-container">
+                            <svg id="coffeeSimulatorSVG" width="280" height="340" viewBox="0 0 280 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <ellipse cx="140" cy="310" rx="70" ry="12" fill="#2B1810" fill-opacity="0.15" />
+                                <path d="M80 60 L95 280 C96 295 110 305 140 305 C170 305 184 295 185 280 L200 60 Z"
+                                      stroke="#E5E0D8" stroke-width="4" fill="rgba(255, 255, 255, 0.2)" />
+                                <path id="layerSyrup" d="M94 260 L95 280 C96 295 110 305 140 305 C170 305 184 295 185 280 L186 260 Z"
+                                      fill="#3A1A05" opacity="0.5" />
+                                <path id="layerMilk" d="M88 140 L94 260 L186 260 L192 140 Z"
+                                      fill="#F4EFE6" opacity="0.95" />
+                                <path id="layerEspresso" d="M84 90 L88 140 L192 140 L196 90 Z"
+                                      fill="#4A2E1B" opacity="0.9" />
+                                <path id="layerFoam" d="M80 60 L84 90 L196 90 L200 60 Z"
+                                      fill="#FFFFFF" opacity="0.9" />
+                                <path d="M90 70 L102 270" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.5" />
+                            </svg>
+                        </div>
+                    </c:when>
+                    <c:when test="${producto.nombre == 'Frappe de vainilla'}">
+                        <img class="detalle-imagen-foto" src="https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&amp;w=600&amp;auto=format&amp;fit=crop" alt="${producto.nombre}">
+                    </c:when>
+                    <c:when test="${producto.nombre == 'Croissant'}">
+                        <img class="detalle-imagen-foto" src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&amp;w=600&amp;auto=format&amp;fit=crop" alt="${producto.nombre}">
+                    </c:when>
+                    <c:otherwise>
+                        <div class="detalle-imagen">&#9749;</div>
+                    </c:otherwise>
+                </c:choose>
 
                 <div>
                     <span class="etiqueta">${producto.categoriaNombre}</span>
                     <h2>${producto.nombre}</h2>
                     <p>${producto.descripcion}</p>
-                    <div class="detalle-precio odometro">$${producto.precioFormateado}</div>
+
+                    <c:if test="${not empty gruposOpcion}">
+                        <div class="personalizacion-producto">
+                            <c:forEach var="grupo" items="${gruposOpcion}">
+                                <div class="grupo-opcion">
+                                    <label class="grupo-opcion-titulo">${grupo.nombre}<c:if test="${grupo.obligatorio}"> *</c:if></label>
+                                    <div class="pill-opciones">
+                                        <c:forEach var="opcion" items="${grupo.opciones}" varStatus="est">
+                                            <label class="pill-opcion">
+                                                <c:choose>
+                                                    <c:when test="${grupo.seleccionMultiple}">
+                                                        <input type="checkbox" name="opcionId" value="${opcion.id}"
+                                                               data-grupo-nombre="${grupo.nombre}" data-opcion-nombre="${opcion.nombre}"
+                                                               data-precio-adicional="${opcion.precioAdicional}">
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <input type="radio" name="opcionId_g${grupo.id}" value="${opcion.id}"
+                                                               data-grupo-nombre="${grupo.nombre}" data-opcion-nombre="${opcion.nombre}"
+                                                               data-precio-adicional="${opcion.precioAdicional}"
+                                                               ${est.first ? 'checked' : ''}>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                                <span>${opcion.nombre}<c:if test="${opcion.precioAdicional > 0}"> (+$${opcion.precioAdicionalFormateado})</c:if></span>
+                                            </label>
+                                        </c:forEach>
+                                    </div>
+                                </div>
+                            </c:forEach>
+                        </div>
+                    </c:if>
+
+                    <div class="detalle-precio odometro" id="detallePrecio" data-precio-base="${producto.precio}">$${producto.precioFormateado}</div>
 
                     <form method="post" action="${pageContext.request.contextPath}/tienda/carrito" class="form-agregar-carrito">
                         <input type="hidden" name="accion" value="agregar">
@@ -83,5 +142,6 @@
 <%@ include file="_footer.jspf" %>
 <script src="${pageContext.request.contextPath}/assets/js/efectos.js" defer></script>
 <script src="${pageContext.request.contextPath}/assets/js/catalogo.js" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/producto.js" defer></script>
 </body>
 </html>
