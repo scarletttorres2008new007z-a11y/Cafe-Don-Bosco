@@ -240,6 +240,99 @@
     margin-top: auto;
 }
 
+/* Boton de vista rapida sobre la imagen de la tarjeta */
+.tarjeta-producto {
+    position: relative;
+}
+
+.boton-vista-rapida {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 999px;
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: var(--sombra-suave);
+}
+
+/* Modal de vista rapida */
+.modal-vista-rapida {
+    border: none;
+    border-radius: var(--radio-lg);
+    padding: 28px;
+    max-width: 640px;
+    width: calc(100% - 40px);
+    box-shadow: var(--sombra-flotante);
+}
+
+.modal-vista-rapida::backdrop {
+    background-color: rgba(28, 18, 12, 0.55);
+    backdrop-filter: blur(2px);
+}
+
+.quick-view-cuerpo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 26px;
+}
+
+.quick-view-cuerpo .imagen-producto {
+    height: 220px;
+    border-radius: var(--radio-md);
+    background-color: var(--color-crema-oscura);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+}
+
+.modal-cerrar {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    border: none;
+    background: transparent;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--color-muted);
+}
+
+@media (max-width: 640px) {
+    .quick-view-cuerpo {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Skeleton de tarjeta mientras la busqueda en vivo carga resultados */
+.tarjeta-producto-skeleton {
+    background: var(--color-blanco);
+    border-radius: var(--radio-md);
+    box-shadow: var(--sombra-suave);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tarjeta-producto-skeleton .skeleton-bloque:nth-child(1) {
+    height: 130px;
+}
+
+.tarjeta-producto-skeleton .skeleton-bloque:nth-child(2) {
+    height: 16px;
+    width: 60%;
+}
+
+.tarjeta-producto-skeleton .skeleton-bloque:nth-child(3) {
+    height: 34px;
+}
+
 /* Detalle de producto */
 .detalle-layout {
     display: grid;

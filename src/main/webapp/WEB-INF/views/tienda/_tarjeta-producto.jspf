@@ -1,4 +1,5 @@
 <div class="tarjeta-producto">
+    <button type="button" class="boton-vista-rapida" data-producto-id="${producto.id}" title="Vista rapida" aria-label="Vista rapida de ${producto.nombre}">&#128065;</button>
     <div class="imagen-producto">&#9749;</div>
     <span class="etiqueta">${producto.categoriaNombre}</span>
     <h3>${producto.nombre}</h3>

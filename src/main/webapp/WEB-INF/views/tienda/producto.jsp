@@ -79,7 +79,9 @@
     </c:choose>
 </div>
 
+<%@ include file="_modal-vista-rapida.jspf" %>
 <%@ include file="_footer.jspf" %>
 <script src="${pageContext.request.contextPath}/assets/js/efectos.js" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/catalogo.js" defer></script>
 </body>
 </html>

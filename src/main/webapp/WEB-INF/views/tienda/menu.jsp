@@ -19,6 +19,7 @@
 
 <section class="hero-tienda">
     <img class="bg-coffee-parallax" src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&amp;w=1000&amp;auto=format&amp;fit=crop" alt="" aria-hidden="true">
+    <canvas id="vaporCanvas" aria-hidden="true"></canvas>
     <p class="etiqueta-superior">Nuestro menu</p>
     <h2>Descubre todos nuestros productos</h2>
     <p>Cafe, bebidas, postres y comida. Todo lo que necesitas para disfrutar el mejor sabor.</p>
@@ -26,7 +27,7 @@
         <c:if test="${not empty categoriaSeleccionada}">
             <input type="hidden" name="categoria" value="${categoriaSeleccionada}">
         </c:if>
-        <input type="search" name="buscar" placeholder="Buscar producto..." value="${busqueda}">
+        <input type="search" id="buscadorEnVivo" name="buscar" placeholder="Buscar producto..." value="${busqueda}" autocomplete="off">
     </form>
 </section>
 
@@ -64,23 +65,27 @@
                 </form>
             </div>
 
-            <c:choose>
-                <c:when test="${empty productos}">
-                    <p class="estado-vacio">No encontramos productos con esos filtros.</p>
-                </c:when>
-                <c:otherwise>
-                    <div class="grid-productos">
-                        <c:forEach var="producto" items="${productos}">
-                            <%@ include file="_tarjeta-producto.jspf" %>
-                        </c:forEach>
-                    </div>
-                </c:otherwise>
-            </c:choose>
+            <div id="resultadosCatalogo">
+                <c:choose>
+                    <c:when test="${empty productos}">
+                        <p class="estado-vacio">No encontramos productos con esos filtros.</p>
+                    </c:when>
+                    <c:otherwise>
+                        <div class="grid-productos">
+                            <c:forEach var="producto" items="${productos}">
+                                <%@ include file="_tarjeta-producto.jspf" %>
+                            </c:forEach>
+                        </div>
+                    </c:otherwise>
+                </c:choose>
+            </div>
         </div>
     </div>
 </div>
 
+<%@ include file="_modal-vista-rapida.jspf" %>
 <%@ include file="_footer.jspf" %>
 <script src="${pageContext.request.contextPath}/assets/js/efectos.js" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/catalogo.js" defer></script>
 </body>
 </html>

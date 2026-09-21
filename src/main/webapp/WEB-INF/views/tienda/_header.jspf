@@ -1,4 +1,4 @@
-<header class="encabezado-tienda">
+<header class="encabezado-tienda" data-context-path="${pageContext.request.contextPath}">
     <a class="marca" href="${pageContext.request.contextPath}/tienda">
         <span class="icono">&#9749;</span>
         <h1>Cafe<br>Don Bosco</h1>

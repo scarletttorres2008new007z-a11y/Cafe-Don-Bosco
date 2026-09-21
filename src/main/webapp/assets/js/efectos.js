@@ -38,12 +38,70 @@
         actualizar();
     }
 
+    // ---------- Vapor: particulas de fondo en el hero ----------
+    function iniciarVaporCanvas() {
+        var canvas = document.getElementById('vaporCanvas');
+        if (!canvas) {
+            return;
+        }
+        var hero = canvas.closest('.hero-tienda') || canvas.parentElement;
+        var ctx = canvas.getContext('2d');
+        var particulas = [];
+        var MAX_PARTICULAS = 45;
+        var mouseX = 0;
+
+        function ajustarTamano() {
+            canvas.width = hero.clientWidth;
+            canvas.height = hero.clientHeight;
+            mouseX = canvas.width / 2;
+        }
+        ajustarTamano();
+        window.addEventListener('resize', ajustarTamano);
+
+        hero.addEventListener('mousemove', function (evento) {
+            var rect = hero.getBoundingClientRect();
+            mouseX = evento.clientX - rect.left;
+        });
+
+        function crearParticula() {
+            return {
+                x: Math.random() * canvas.width,
+                y: canvas.height + 10,
+                radio: 2 + Math.random() * 3,
+                velocidadY: 0.35 + Math.random() * 0.55,
+                deriva: (Math.random() - 0.5) * 0.5,
+                opacidad: 0.05 + Math.random() * 0.12
+            };
+        }
+
+        function animar() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (particulas.length < MAX_PARTICULAS && Math.random() > 0.6) {
+                particulas.push(crearParticula());
+            }
+            particulas.forEach(function (p) {
+                var atraccion = (mouseX - p.x) * 0.0015;
+                p.x += p.deriva + atraccion;
+                p.y -= p.velocidadY;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radio, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(248, 246, 240, ' + p.opacidad + ')';
+                ctx.fill();
+            });
+            particulas = particulas.filter(function (p) {
+                return p.y + p.radio > -10;
+            });
+            requestAnimationFrame(animar);
+        }
+        requestAnimationFrame(animar);
+    }
+
     // ---------- Tarjetas: spotlight + 3D tilt ----------
-    function iniciarSpotlightYTilt() {
+    function iniciarSpotlightYTilt(raiz) {
         if (ES_PUNTERO_TOSCO) {
             return;
         }
-        var tarjetas = document.querySelectorAll('.tarjeta-producto, .tarjeta-categoria');
+        var tarjetas = (raiz || document).querySelectorAll('.tarjeta-producto, .tarjeta-categoria');
         tarjetas.forEach(function (tarjeta) {
             tarjeta.addEventListener('mousemove', function (evento) {
                 var rect = tarjeta.getBoundingClientRect();
@@ -141,45 +199,59 @@
     }
 
     // ---------- Odometro: cuenta desde 0 hasta el valor real ya renderizado ----------
-    function iniciarOdometros() {
-        var elementos = document.querySelectorAll('.odometro');
-        elementos.forEach(function (el) {
-            var textoOriginal = el.textContent.trim();
-            var coincidencia = textoOriginal.match(/\d[\d,]*\.?\d*/);
-            if (!coincidencia) {
-                return;
-            }
-            var crudo = coincidencia[0];
-            var valorFinal = parseFloat(crudo.replace(/,/g, ''));
-            if (isNaN(valorFinal)) {
-                return;
-            }
-            var decimales = crudo.indexOf('.') >= 0 ? (crudo.split('.')[1] || '').length : 0;
-            var prefijo = textoOriginal.slice(0, coincidencia.index);
-            var sufijo = textoOriginal.slice(coincidencia.index + crudo.length);
-            var duracionMs = 700;
-            var inicio = null;
+    function animarOdometroElemento(el) {
+        var textoOriginal = el.textContent.trim();
+        var coincidencia = textoOriginal.match(/\d[\d,]*\.?\d*/);
+        if (!coincidencia) {
+            return;
+        }
+        var crudo = coincidencia[0];
+        var valorFinal = parseFloat(crudo.replace(/,/g, ''));
+        if (isNaN(valorFinal)) {
+            return;
+        }
+        var decimales = crudo.indexOf('.') >= 0 ? (crudo.split('.')[1] || '').length : 0;
+        var prefijo = textoOriginal.slice(0, coincidencia.index);
+        var sufijo = textoOriginal.slice(coincidencia.index + crudo.length);
+        var duracionMs = 700;
+        var inicio = null;
 
-            function paso(marca) {
-                if (inicio === null) {
-                    inicio = marca;
-                }
-                var progreso = Math.min((marca - inicio) / duracionMs, 1);
-                var facilitado = 1 - Math.pow(1 - progreso, 3);
-                el.textContent = prefijo + (valorFinal * facilitado).toFixed(decimales) + sufijo;
-                if (progreso < 1) {
-                    requestAnimationFrame(paso);
-                } else {
-                    el.textContent = textoOriginal;
-                }
+        function paso(marca) {
+            if (inicio === null) {
+                inicio = marca;
             }
-            requestAnimationFrame(paso);
-        });
+            var progreso = Math.min((marca - inicio) / duracionMs, 1);
+            var facilitado = 1 - Math.pow(1 - progreso, 3);
+            el.textContent = prefijo + (valorFinal * facilitado).toFixed(decimales) + sufijo;
+            if (progreso < 1) {
+                requestAnimationFrame(paso);
+            } else {
+                el.textContent = textoOriginal;
+            }
+        }
+        requestAnimationFrame(paso);
+    }
+
+    function iniciarOdometros(raiz) {
+        (raiz || document).querySelectorAll('.odometro').forEach(animarOdometroElemento);
     }
 
     // ---------- Fly-to-cart ----------
-    function iniciarFlyToCart() {
-        var formularios = document.querySelectorAll('form.form-agregar-carrito');
+    /** Sube por los ancestros del form hasta hallar uno que contenga un icono de producto visible. */
+    function buscarOrigenDeVuelo(form) {
+        var nodo = form.parentElement;
+        while (nodo && nodo !== document.body) {
+            var candidato = nodo.querySelector('.imagen-producto, .detalle-imagen');
+            if (candidato) {
+                return candidato;
+            }
+            nodo = nodo.parentElement;
+        }
+        return null;
+    }
+
+    function iniciarFlyToCart(raiz) {
+        var formularios = (raiz || document).querySelectorAll('form.form-agregar-carrito');
         var iconoCarrito = document.querySelector('.carrito-boton');
 
         formularios.forEach(function (form) {
@@ -191,8 +263,7 @@
                 if (!iconoCarrito) {
                     return;
                 }
-                var tarjeta = form.closest('.tarjeta-producto') || form.closest('.detalle-layout') || form.parentElement;
-                var origenEl = tarjeta ? (tarjeta.querySelector('.imagen-producto') || tarjeta.querySelector('.detalle-imagen')) : null;
+                var origenEl = buscarOrigenDeVuelo(form);
                 if (!origenEl) {
                     return;
                 }
@@ -270,6 +341,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         var modulos = [
             iniciarParallax,
+            iniciarVaporCanvas,
             iniciarSpotlightYTilt,
             iniciarCursorMagnetico,
             iniciarOdometros,
@@ -284,4 +356,33 @@
             }
         });
     });
+
+    /**
+     * API publica minima para que scripts especificos de una pagina (ej.
+     * el live search del catalogo) puedan reutilizar el motor de CAPA 1
+     * sobre contenido que insertan dinamicamente despues de la carga
+     * inicial, sin duplicar logica ni volver a enganchar lo que ya existia.
+     */
+    window.CafeEfectos = {
+        mostrarToast: mostrarToast,
+        animarOdometro: animarOdometroElemento,
+        reengancharTarjetas: function (contenedor) {
+            var raiz = contenedor || document;
+            try {
+                iniciarSpotlightYTilt(raiz);
+            } catch (error) {
+                console.error('[efectos] fallo al reenganchar spotlight/tilt', error);
+            }
+            try {
+                iniciarOdometros(raiz);
+            } catch (error) {
+                console.error('[efectos] fallo al reenganchar odometro', error);
+            }
+            try {
+                iniciarFlyToCart(raiz);
+            } catch (error) {
+                console.error('[efectos] fallo al reenganchar fly-to-cart', error);
+            }
+        }
+    };
 })();
