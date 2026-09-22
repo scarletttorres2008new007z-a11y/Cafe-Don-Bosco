@@ -11,7 +11,10 @@
     <p>
         <strong>Numero de pedido:</strong> #000${venta.id}<br>
         <strong>Fecha:</strong> ${venta.fechaFormateada}<br>
-        <strong>Hora:</strong> ${venta.horaFormateada}
+        <strong>Hora:</strong> ${venta.horaFormateada}<br>
+        <c:if test="${not empty venta.nombreCliente}">
+            <strong>Cliente:</strong> ${venta.nombreCliente}
+        </c:if>
     </p>
 
     <table class="tabla">
@@ -26,7 +29,14 @@
         <tbody>
         <c:forEach var="detalle" items="${venta.detalles}">
             <tr>
-                <td>${detalle.nombreProducto}</td>
+                <td>
+                    ${detalle.nombreProducto}
+                    <c:if test="${not empty detalle.opciones}">
+                        <br><small class="ayuda">
+                            <c:forEach var="opcion" items="${detalle.opciones}" varStatus="est">${opcion.nombreOpcion}<c:if test="${not est.last}">, </c:if></c:forEach>
+                        </small>
+                    </c:if>
+                </td>
                 <td>${detalle.cantidad}</td>
                 <td>$${detalle.precioUnitarioFormateado}</td>
                 <td>$${detalle.subtotalFormateado}</td>

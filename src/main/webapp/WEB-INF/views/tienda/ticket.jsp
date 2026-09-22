@@ -25,7 +25,12 @@
         <c:otherwise>
             <%@ include file="../_ticket-contenido.jspf" %>
             <div class="acciones-ticket no-imprimir">
-                <button type="button" class="boton" onclick="window.print()">Imprimir / Descargar PDF</button>
+                <button type="button" class="boton" onclick="window.print()">Imprimir ticket</button>
+                <a class="boton secundario" href="${pageContext.request.contextPath}/api/tickets/${venta.tokenTicket}/pdf" target="_blank" rel="noopener">Descargar PDF oficial</a>
+                <button type="button" class="boton secundario" id="botonCompartirWhatsApp"
+                        data-context-path="${pageContext.request.contextPath}" data-token="${venta.tokenTicket}">
+                    Compartir por WhatsApp
+                </button>
                 <a class="boton secundario" href="${pageContext.request.contextPath}/tienda">Volver al inicio</a>
             </div>
         </c:otherwise>
@@ -34,5 +39,6 @@
 
 <%@ include file="_footer.jspf" %>
 <script src="${pageContext.request.contextPath}/assets/js/efectos.js" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/ticket.js" defer></script>
 </body>
 </html>
