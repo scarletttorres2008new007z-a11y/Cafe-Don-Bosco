@@ -304,6 +304,23 @@
     box-shadow: var(--sombra-suave);
 }
 
+.badge-agotado {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+    background-color: var(--color-error);
+    color: var(--color-blanco);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+.tarjeta-producto.agotada .imagen-producto {
+    filter: grayscale(100%) opacity(0.6);
+}
+
 /* Modal de vista rapida */
 .modal-vista-rapida {
     border: none;

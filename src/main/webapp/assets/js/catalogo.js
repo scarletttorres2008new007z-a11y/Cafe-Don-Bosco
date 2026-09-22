@@ -52,7 +52,7 @@
     function crearTarjetaProducto(producto, consulta) {
         var contextPath = obtenerContextPath();
         var tarjeta = document.createElement('div');
-        tarjeta.className = 'tarjeta-producto';
+        tarjeta.className = 'tarjeta-producto' + (producto.disponible ? '' : ' agotada');
 
         var botonVista = document.createElement('button');
         botonVista.type = 'button';
@@ -62,6 +62,13 @@
         botonVista.setAttribute('aria-label', 'Vista rapida de ' + producto.nombre);
         botonVista.textContent = '👁';
         tarjeta.appendChild(botonVista);
+
+        if (!producto.disponible) {
+            var badge = document.createElement('span');
+            badge.className = 'badge-agotado';
+            badge.textContent = 'Agotado';
+            tarjeta.appendChild(badge);
+        }
 
         var imagen = document.createElement('div');
         imagen.className = 'imagen-producto';
@@ -384,6 +391,7 @@
                         imagenEl.style.backgroundImage = '';
                         imagenEl.textContent = '☕';
                     }
+                    imagenEl.style.filter = producto.disponible ? '' : 'grayscale(100%) opacity(0.6)';
                 }
 
                 if (grupos.length) {
