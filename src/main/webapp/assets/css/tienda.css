@@ -240,6 +240,15 @@
     gap: 20px;
 }
 
+.paginacion-catalogo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 28px;
+}
+
 .tarjeta-producto {
     background: var(--color-blanco);
     border-radius: var(--radio-md);

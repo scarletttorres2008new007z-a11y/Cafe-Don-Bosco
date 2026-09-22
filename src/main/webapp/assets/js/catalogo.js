@@ -158,6 +158,74 @@
         if (window.CafeEfectos) {
             window.CafeEfectos.reengancharTarjetas(grid);
         }
+        iniciarPaginacion(contenedor);
+    }
+
+    // ---------- Paginacion (sobre las tarjetas ya renderizadas) ----------
+    var PRODUCTOS_POR_PAGINA = 8;
+
+    function iniciarPaginacion(contenedor) {
+        var grid = contenedor.querySelector('.grid-productos');
+        if (!grid) {
+            return;
+        }
+        var tarjetas = Array.prototype.slice.call(grid.children);
+        var totalPaginas = Math.max(1, Math.ceil(tarjetas.length / PRODUCTOS_POR_PAGINA));
+
+        var pager = contenedor.querySelector('.paginacion-catalogo');
+        if (!pager) {
+            pager = document.createElement('div');
+            pager.className = 'paginacion-catalogo';
+            contenedor.appendChild(pager);
+        }
+
+        if (totalPaginas <= 1) {
+            pager.innerHTML = '';
+            return;
+        }
+
+        var pagina = 1;
+
+        function mostrarPagina() {
+            var inicio = (pagina - 1) * PRODUCTOS_POR_PAGINA;
+            tarjetas.forEach(function (tarjeta, indice) {
+                tarjeta.style.display = (indice >= inicio && indice < inicio + PRODUCTOS_POR_PAGINA) ? '' : 'none';
+            });
+            renderizarBotones();
+            grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function renderizarBotones() {
+            pager.innerHTML = '';
+            var anterior = document.createElement('button');
+            anterior.type = 'button';
+            anterior.className = 'boton secundario pequeno';
+            anterior.textContent = '‹ Anterior';
+            anterior.disabled = pagina === 1;
+            anterior.addEventListener('click', function () { pagina--; mostrarPagina(); });
+            pager.appendChild(anterior);
+
+            for (var i = 1; i <= totalPaginas; i++) {
+                (function (numero) {
+                    var boton = document.createElement('button');
+                    boton.type = 'button';
+                    boton.className = 'boton pequeno' + (numero === pagina ? '' : ' secundario');
+                    boton.textContent = String(numero);
+                    boton.addEventListener('click', function () { pagina = numero; mostrarPagina(); });
+                    pager.appendChild(boton);
+                })(i);
+            }
+
+            var siguiente = document.createElement('button');
+            siguiente.type = 'button';
+            siguiente.className = 'boton secundario pequeno';
+            siguiente.textContent = 'Siguiente ›';
+            siguiente.disabled = pagina === totalPaginas;
+            siguiente.addEventListener('click', function () { pagina++; mostrarPagina(); });
+            pager.appendChild(siguiente);
+        }
+
+        mostrarPagina();
     }
 
     function construirUrlBusqueda(consulta) {
@@ -325,8 +393,15 @@
         });
     }
 
+    function iniciarPaginacionInicial() {
+        var contenedor = document.getElementById('resultadosCatalogo');
+        if (contenedor) {
+            iniciarPaginacion(contenedor);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-        [iniciarBusquedaEnVivo, iniciarVistaRapida].forEach(function (modulo) {
+        [iniciarBusquedaEnVivo, iniciarVistaRapida, iniciarPaginacionInicial].forEach(function (modulo) {
             try {
                 modulo();
             } catch (error) {
