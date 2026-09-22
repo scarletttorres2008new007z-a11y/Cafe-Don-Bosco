@@ -17,6 +17,7 @@ public class ProductoAdminResponseDTO {
     private String descripcion;
     private BigDecimal precio;
     private String imagen;
+    private Integer tiempoPreparacionMinutos;
     private String tiempoPreparacion;
     private Boolean activo;
     private Integer stock;
@@ -83,6 +84,14 @@ public class ProductoAdminResponseDTO {
 
     public void setImagen(String imagen) {
         this.imagen = imagen;
+    }
+
+    public Integer getTiempoPreparacionMinutos() {
+        return tiempoPreparacionMinutos;
+    }
+
+    public void setTiempoPreparacionMinutos(Integer tiempoPreparacionMinutos) {
+        this.tiempoPreparacionMinutos = tiempoPreparacionMinutos;
     }
 
     public String getTiempoPreparacion() {

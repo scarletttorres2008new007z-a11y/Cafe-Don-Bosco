@@ -305,6 +305,7 @@ public class ProductoServiceImpl implements ProductoService {
         dto.setDescripcion(producto.getDescripcion());
         dto.setPrecio(producto.getPrecio());
         dto.setImagen(producto.getImagen());
+        dto.setTiempoPreparacionMinutos(producto.getTiempoPreparacionMinutos());
         dto.setTiempoPreparacion(formatearTiempoPreparacion(producto.getTiempoPreparacionMinutos()));
         dto.setActivo(producto.getActivo());
         Inventario inventario = inventarios.get(producto.getId());

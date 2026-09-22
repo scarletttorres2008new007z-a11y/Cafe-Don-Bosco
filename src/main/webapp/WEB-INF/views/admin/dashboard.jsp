@@ -7,36 +7,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Panel administrativo | Cafe Don Bosco</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css">
 </head>
 <body>
 <div class="app">
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-row"><span class="cup">&#9749;</span><strong>Cafe<br>Don Bosco</strong></div>
-            <small>Buen cafe, mejores momentos</small>
-        </div>
-        <nav class="nav">
-            <a class="active" href="${pageContext.request.contextPath}/admin/dashboard"><span class="ico">&#8962;</span>Inicio</a>
-            <a href="${pageContext.request.contextPath}/admin/productos"><span class="ico">&#9749;</span>Productos</a>
-            <a href="${pageContext.request.contextPath}/admin/venta-nueva"><span class="ico">&#128722;</span>Nueva venta</a>
-            <a href="${pageContext.request.contextPath}/admin/historial-ventas"><span class="ico">&#9201;</span>Historial de ventas</a>
-            <a href="${pageContext.request.contextPath}/logout"><span class="ico">&#8618;</span>Cerrar sesion</a>
-        </nav>
-        <div class="sidebar-foot">
-            <div class="botanical">&#9749;</div>
-            <b>Cafe Don Bosco</b><br>Sistema de mostrador<br>v1.0
-        </div>
-    </aside>
+    <%@ include file="_sidebar.jspf" %>
 
     <main class="main">
-        <header class="topbar">
-            <button type="button" class="menu" aria-label="Abrir menu">&#9776;</button>
-            <div class="user">
-                <span class="avatar">${usuario.nombre.substring(0,1)}</span>
-                <span><b>${usuario.nombre}</b><br>Administrador</span>
-            </div>
-        </header>
+        <%@ include file="_topbar.jspf" %>
 
         <div class="content">
             <div class="welcome">
@@ -94,25 +73,22 @@
                         </div>
                         <c:choose>
                             <c:when test="${empty destacados}">
-                                <p style="font-size:11px;color:#777;">Todavia no hay productos activos.</p>
+                                <p class="estado-vacio">Todavia no hay productos activos.</p>
                             </c:when>
                             <c:otherwise>
                                 <div class="products">
                                     <c:forEach var="producto" items="${destacados}">
                                         <article class="product">
                                             <c:choose>
-                                                <c:when test="${fn:containsIgnoreCase(producto.nombre, 'americano')}">
-                                                    <div class="pic" style="background-image:url('${pageContext.request.contextPath}/assets/img/americano.jpg')"></div>
-                                                </c:when>
-                                                <c:when test="${producto.categoriaNombre == 'Cafe'}">
-                                                    <div class="pic" style="background-image:url('${pageContext.request.contextPath}/assets/img/capuchino.jpg')"></div>
+                                                <c:when test="${not empty producto.imagen}">
+                                                    <div class="pic" style="background-image:url('${pageContext.request.contextPath}${fn:escapeXml(producto.imagen)}')"></div>
                                                 </c:when>
                                                 <c:otherwise>
-                                                    <div class="pic" style="background-image:url('${pageContext.request.contextPath}/assets/img/productos.jpg')"></div>
+                                                    <div class="pic pic-vacia">&#9749;</div>
                                                 </c:otherwise>
                                             </c:choose>
-                                            <h4>${producto.nombre}</h4>
-                                            <small>${producto.categoriaNombre}</small>
+                                            <h4>${fn:escapeXml(producto.nombre)}</h4>
+                                            <small>${fn:escapeXml(producto.categoriaNombre)}</small>
                                             <div class="price">$${producto.precioFormateado}</div>
                                             <c:choose>
                                                 <c:when test="${producto.disponible}">
@@ -139,7 +115,7 @@
                         </div>
                         <c:choose>
                             <c:when test="${empty resumen.ventasRecientes}">
-                                <p style="font-size:11px;color:#777;">Todavia no hay ventas registradas.</p>
+                                <p class="estado-vacio">Todavia no hay ventas registradas.</p>
                             </c:when>
                             <c:otherwise>
                                 <table>
@@ -194,7 +170,7 @@
                             <div class="lowstock">
                                 <c:forEach var="producto" items="${resumen.productosStockBajo}">
                                     <div class="item">
-                                        <b>${producto.nombre}</b>
+                                        <b>${fn:escapeXml(producto.nombre)}</b>
                                         <span>${producto.stock} u. (min ${producto.stockMinimo})</span>
                                     </div>
                                 </c:forEach>
@@ -208,6 +184,6 @@
         </div>
     </main>
 </div>
-<script src="${pageContext.request.contextPath}/assets/js/admin-dashboard.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/admin-shell.js"></script>
 </body>
 </html>

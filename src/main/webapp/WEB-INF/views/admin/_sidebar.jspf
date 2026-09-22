@@ -1,21 +1,18 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<aside class="barra-lateral">
-    <div class="marca">
-        <span class="icono">&#9749;</span>
-        <h1>Cafe<br>Don Bosco</h1>
+<aside class="sidebar">
+    <div class="brand">
+        <div class="brand-row"><span class="cup">&#9749;</span><strong>Cafe<br>Don Bosco</strong></div>
+        <small>Buen cafe, mejores momentos</small>
     </div>
-    <p class="eslogan">Buen cafe, mejores momentos</p>
-
-    <nav>
-        <a href="${pageContext.request.contextPath}/admin/dashboard" class="${activo == 'dashboard' ? 'activo' : ''}">&#8962; Inicio</a>
-        <a href="${pageContext.request.contextPath}/admin/productos" class="${activo == 'productos' ? 'activo' : ''}">&#9749; Productos</a>
-        <a href="${pageContext.request.contextPath}/admin/venta-nueva" class="${activo == 'venta-nueva' ? 'activo' : ''}">&#128722; Nueva venta</a>
-        <a href="${pageContext.request.contextPath}/admin/historial-ventas" class="${activo == 'historial' ? 'activo' : ''}">&#128337; Historial de ventas</a>
-        <a href="${pageContext.request.contextPath}/logout">&#8618; Cerrar sesion</a>
+    <nav class="nav">
+        <a class="${activo == 'dashboard' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/dashboard"><span class="ico">&#8962;</span>Inicio</a>
+        <a class="${activo == 'productos' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/productos"><span class="ico">&#9749;</span>Productos</a>
+        <a class="${activo == 'venta-nueva' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/venta-nueva"><span class="ico">&#128722;</span>Nueva venta</a>
+        <a class="${activo == 'historial' ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/historial-ventas"><span class="ico">&#9201;</span>Historial de ventas</a>
+        <a href="${pageContext.request.contextPath}/logout"><span class="ico">&#8618;</span>Cerrar sesion</a>
     </nav>
-
-    <div class="pie">
-        Cafe Don Bosco<br>
-        Sistema de mostrador v1.0
+    <div class="sidebar-foot">
+        <div class="botanical">&#9749;</div>
+        <b>Cafe Don Bosco</b><br>Sistema de mostrador<br>v1.0
     </div>
 </aside>

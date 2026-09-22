@@ -344,21 +344,21 @@ ON DUPLICATE KEY UPDATE nombre = nombre;
 
 -- Productos de ejemplo para poder probar el catalogo sin cargar datos a mano
 INSERT INTO producto (categoria_id, nombre, descripcion, precio, imagen, tiempo_preparacion_minutos, activo)
-SELECT id, 'Cafe Latte', 'Cafe espresso con leche vaporizada.', 2.50, NULL, 3, TRUE
+SELECT id, 'Cafe Latte', 'Cafe espresso con leche vaporizada.', 2.50, '/assets/img/capuchino.jpg', 3, TRUE
 FROM categoria WHERE nombre = 'Cafe'
 UNION ALL
-SELECT id, 'Cafe Americano', 'Cafe puro, de sabor intenso.', 2.00, NULL, 2, TRUE
+SELECT id, 'Cafe Americano', 'Cafe puro, de sabor intenso.', 2.00, '/assets/img/americano.jpg', 2, TRUE
 FROM categoria WHERE nombre = 'Cafe'
 UNION ALL
-SELECT id, 'Frappe de vainilla', 'Refrescante y cremoso.', 3.00, NULL, 4, TRUE
+SELECT id, 'Frappe de vainilla', 'Refrescante y cremoso.', 3.00, '/assets/img/frappe-vainilla.jpg', 4, TRUE
 FROM categoria WHERE nombre = 'Bebidas'
 UNION ALL
 SELECT id, 'Pastel de chocolate', 'Suave, intenso y delicioso.', 3.50, NULL, 1, TRUE
 FROM categoria WHERE nombre = 'Postres'
 UNION ALL
-SELECT id, 'Croissant', 'Hojaldre artesanal.', 2.00, NULL, 1, TRUE
+SELECT id, 'Croissant', 'Hojaldre artesanal.', 2.00, '/assets/img/croissant.jpg', 1, TRUE
 FROM categoria WHERE nombre = 'Comida'
-ON DUPLICATE KEY UPDATE nombre = nombre;
+ON DUPLICATE KEY UPDATE imagen = VALUES(imagen);
 
 INSERT INTO inventario (producto_id, cantidad, stock_minimo)
 SELECT id, 30, 5 FROM producto WHERE NOT EXISTS (

@@ -15,11 +15,14 @@ import sv.udb.cafedonbosco.exception.ValidacionException;
 import sv.udb.cafedonbosco.model.Carrito;
 import sv.udb.cafedonbosco.model.CarritoItem;
 import sv.udb.cafedonbosco.service.CarritoService;
+import sv.udb.cafedonbosco.service.CategoriaService;
 import sv.udb.cafedonbosco.service.ProductoService;
 import sv.udb.cafedonbosco.service.VentaService;
 import sv.udb.cafedonbosco.service.impl.CarritoServiceImpl;
+import sv.udb.cafedonbosco.service.impl.CategoriaServiceImpl;
 import sv.udb.cafedonbosco.service.impl.ProductoServiceImpl;
 import sv.udb.cafedonbosco.service.impl.VentaServiceImpl;
+import sv.udb.cafedonbosco.util.FechaUtil;
 import sv.udb.cafedonbosco.util.SessionUtil;
 
 import java.io.IOException;
@@ -42,6 +45,7 @@ public class VentaNuevaViewServlet extends HttpServlet {
     private final ProductoService productoService = new ProductoServiceImpl();
     private final CarritoService carritoService = new CarritoServiceImpl();
     private final VentaService ventaService = new VentaServiceImpl();
+    private final CategoriaService categoriaService = new CategoriaServiceImpl();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -119,6 +123,8 @@ public class VentaNuevaViewServlet extends HttpServlet {
         request.setAttribute("usuario", SessionUtil.obtenerUsuarioAutenticado(request));
         request.setAttribute("error", error);
         request.setAttribute("productos", productoService.listarAdmin());
+        request.setAttribute("categorias", categoriaService.listarActivas());
+        request.setAttribute("fechaHoy", FechaUtil.obtenerFechaActualFormateada());
 
         Carrito carritoAdmin = SessionUtil.obtenerOCrearCarritoAdmin(request);
         request.setAttribute("carrito", carritoService.obtenerResumen(carritoAdmin));
