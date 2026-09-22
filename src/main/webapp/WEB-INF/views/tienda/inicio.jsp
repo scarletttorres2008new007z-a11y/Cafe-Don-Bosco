@@ -37,6 +37,24 @@
     </div>
 
     <div class="seccion-titulo">
+        <h2>&#9889; Acciones rapidas</h2>
+    </div>
+    <div class="grid-acciones">
+        <a class="tarjeta-accion" href="${pageContext.request.contextPath}/tienda/menu">
+            <span class="icono">&#128722;</span>
+            <span><strong>Explorar el menu</strong><span>Ver todo el catalogo</span></span>
+        </a>
+        <a class="tarjeta-accion" href="${pageContext.request.contextPath}/tienda/carrito">
+            <span class="icono">&#128717;</span>
+            <span><strong>Ver mi carrito</strong><span>Revisar lo que llevas</span></span>
+        </a>
+        <a class="tarjeta-accion" href="${pageContext.request.contextPath}/tienda/nosotros">
+            <span class="icono">&#9825;</span>
+            <span><strong>Conocenos</strong><span>Nuestra historia</span></span>
+        </a>
+    </div>
+
+    <div class="seccion-titulo">
         <h2>Categorias</h2>
     </div>
     <div class="grid-categorias">

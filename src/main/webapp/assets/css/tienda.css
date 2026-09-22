@@ -153,6 +153,41 @@
     margin-bottom: 8px;
 }
 
+.grid-acciones {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.tarjeta-accion {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background-color: var(--color-blanco);
+    border-radius: var(--radio-md);
+    box-shadow: var(--sombra-suave);
+    padding: 18px 20px;
+    text-decoration: none;
+    color: var(--color-cafe);
+}
+
+.tarjeta-accion .icono {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+}
+
+.tarjeta-accion strong {
+    display: block;
+    font-size: 0.95rem;
+}
+
+.tarjeta-accion span {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-muted);
+    margin-top: 2px;
+}
+
 .cta-tienda {
     background-color: var(--color-crema-oscura);
     border-radius: var(--radio-lg);
