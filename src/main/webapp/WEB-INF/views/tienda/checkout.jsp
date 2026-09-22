@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -51,15 +52,15 @@
                     <div class="paso-checkout-contenido">
                         <div class="campo" data-validar="nombreCompleto">
                             <label for="nombreCompleto">Nombre completo * <span class="indicador-validacion"></span></label>
-                            <input type="text" id="nombreCompleto" name="nombreCompleto" value="${datos.nombreCompleto}" required>
+                            <input type="text" id="nombreCompleto" name="nombreCompleto" value="${fn:escapeXml(datos.nombreCompleto)}" required>
                         </div>
                         <div class="campo" data-validar="correo">
                             <label for="correo">Correo electronico * <span class="indicador-validacion"></span></label>
-                            <input type="email" id="correo" name="correo" value="${datos.correo}" required>
+                            <input type="email" id="correo" name="correo" value="${fn:escapeXml(datos.correo)}" required>
                         </div>
                         <div class="campo" data-validar="telefono">
                             <label for="telefono">Telefono * <span class="indicador-validacion"></span></label>
-                            <input type="tel" id="telefono" name="telefono" value="${datos.telefono}" required>
+                            <input type="tel" id="telefono" name="telefono" value="${fn:escapeXml(datos.telefono)}" required>
                         </div>
                         <div class="campo">
                             <label>Tipo de entrega *</label>
@@ -76,11 +77,11 @@
                         </div>
                         <div class="campo" data-validar="direccion">
                             <label for="direccion">Direccion <span class="indicador-validacion"></span></label>
-                            <input type="text" id="direccion" name="direccion" value="${datos.direccion}" placeholder="Obligatoria solo para entrega a domicilio">
+                            <input type="text" id="direccion" name="direccion" value="${fn:escapeXml(datos.direccion)}" placeholder="Obligatoria solo para entrega a domicilio">
                         </div>
                         <div class="campo">
                             <label for="notas">Notas adicionales (opcional)</label>
-                            <textarea id="notas" name="notas" placeholder="Ej. Sin azucar, sin hielo, etc.">${datos.notas}</textarea>
+                            <textarea id="notas" name="notas" placeholder="Ej. Sin azucar, sin hielo, etc.">${fn:escapeXml(datos.notas)}</textarea>
                         </div>
                         <button type="button" class="boton" id="botonSiguientePaso">Siguiente: metodo de pago &rarr;</button>
                     </div>
@@ -109,6 +110,7 @@
                                 <span class="opcion-radio-icono">&#128181;</span>
                             </label>
                         </div>
+                        <p class="ayuda" style="margin-top:10px;">&#9888; Este sistema no procesa pagos reales: no hay integracion con ningun banco ni pasarela de pago (Stripe, PayPal, etc.). "Tarjeta de credito/debito" es un pago SIMULADO solo para fines de prueba; no se te pedira ni se guardara ningun dato de tarjeta.</p>
                         <button type="button" class="boton secundario" id="botonVolverPaso" style="margin-top:14px;">&larr; Volver a datos de envio</button>
                     </div>
                 </div>

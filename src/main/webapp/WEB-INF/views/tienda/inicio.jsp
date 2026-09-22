@@ -62,7 +62,7 @@
         <c:forEach var="categoria" items="${categorias}">
             <a class="tarjeta-categoria" href="${pageContext.request.contextPath}/tienda/menu?categoria=${categoria.id}">
                 <span class="icono">&#9749;</span>
-                ${categoria.nombre}
+                ${fn:escapeXml(categoria.nombre)}
             </a>
         </c:forEach>
     </div>

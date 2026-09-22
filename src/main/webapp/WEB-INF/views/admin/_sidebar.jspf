@@ -23,7 +23,7 @@
     <h2>&#191;Deseas cerrar sesion?</h2>
     <p class="cerrar-sesion-descripcion">Estas a punto de salir del sistema de mostrador.<br>Asegurate de haber completado las transacciones pendientes.</p>
     <div class="cerrar-sesion-info">
-        <span class="avatar">${usuario.nombre.substring(0,1)}</span>
+        <span class="avatar">${fn:escapeXml(fn:substring(usuario.nombre, 0, 1))}</span>
         <div class="cerrar-sesion-datos">
             <strong>${fn:escapeXml(usuario.nombre)} (Administrador)</strong>
             <span>${fn:escapeXml(usuario.correo)}</span>

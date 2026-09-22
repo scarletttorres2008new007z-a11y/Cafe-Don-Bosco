@@ -55,9 +55,9 @@
                 </c:choose>
 
                 <div>
-                    <span class="etiqueta">${producto.categoriaNombre}</span>
-                    <h2>${producto.nombre}</h2>
-                    <p>${producto.descripcion}</p>
+                    <span class="etiqueta">${fn:escapeXml(producto.categoriaNombre)}</span>
+                    <h2>${fn:escapeXml(producto.nombre)}</h2>
+                    <p>${fn:escapeXml(producto.descripcion)}</p>
 
                     <form method="post" action="${pageContext.request.contextPath}/tienda/carrito" class="form-agregar-carrito">
                         <input type="hidden" name="accion" value="agregar">
@@ -68,24 +68,24 @@
                             <div class="personalizacion-producto">
                                 <c:forEach var="grupo" items="${gruposOpcion}">
                                     <div class="grupo-opcion">
-                                        <label class="grupo-opcion-titulo">${grupo.nombre}<c:if test="${grupo.obligatorio}"> *</c:if></label>
+                                        <label class="grupo-opcion-titulo">${fn:escapeXml(grupo.nombre)}<c:if test="${grupo.obligatorio}"> *</c:if></label>
                                         <div class="pill-opciones">
                                             <c:forEach var="opcion" items="${grupo.opciones}" varStatus="est">
                                                 <label class="pill-opcion">
                                                     <c:choose>
                                                         <c:when test="${grupo.seleccionMultiple}">
                                                             <input type="checkbox" name="opcionId" value="${opcion.id}"
-                                                                   data-grupo-nombre="${grupo.nombre}" data-opcion-nombre="${opcion.nombre}"
+                                                                   data-grupo-nombre="${fn:escapeXml(grupo.nombre)}" data-opcion-nombre="${fn:escapeXml(opcion.nombre)}"
                                                                    data-precio-adicional="${opcion.precioAdicional}">
                                                         </c:when>
                                                         <c:otherwise>
                                                             <input type="radio" name="opcionId_g${grupo.id}" value="${opcion.id}"
-                                                                   data-grupo-nombre="${grupo.nombre}" data-opcion-nombre="${opcion.nombre}"
+                                                                   data-grupo-nombre="${fn:escapeXml(grupo.nombre)}" data-opcion-nombre="${fn:escapeXml(opcion.nombre)}"
                                                                    data-precio-adicional="${opcion.precioAdicional}"
                                                                    ${est.first ? 'checked' : ''}>
                                                         </c:otherwise>
                                                     </c:choose>
-                                                    <span>${opcion.nombre}<c:if test="${opcion.precioAdicional > 0}"> (+$${opcion.precioAdicionalFormateado})</c:if></span>
+                                                    <span>${fn:escapeXml(opcion.nombre)}<c:if test="${opcion.precioAdicional > 0}"> (+$${opcion.precioAdicionalFormateado})</c:if></span>
                                                 </label>
                                             </c:forEach>
                                         </div>
@@ -120,7 +120,7 @@
                             <span class="icono-info">&#9749;</span>
                             <div>
                                 <span class="etiqueta-info">Categoria</span>
-                                <span class="valor-info">${producto.categoriaNombre}</span>
+                                <span class="valor-info">${fn:escapeXml(producto.categoriaNombre)}</span>
                             </div>
                         </div>
                         <div class="item">

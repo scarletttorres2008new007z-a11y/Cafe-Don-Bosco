@@ -42,7 +42,7 @@
             <c:forEach var="categoria" items="${categorias}">
                 <a href="${pageContext.request.contextPath}/tienda/menu?categoria=${categoria.id}"
                    class="${categoriaSeleccionada == categoria.id ? 'activa' : ''}">
-                    <span>${categoria.nombre}</span><span>${categoria.cantidadProductos}</span>
+                    <span>${fn:escapeXml(categoria.nombre)}</span><span>${categoria.cantidadProductos}</span>
                 </a>
             </c:forEach>
         </aside>

@@ -96,6 +96,18 @@ public class VentaServiceImpl implements VentaService {
         venta.setTipoVenta(TipoVenta.WEB);
         venta.setEstado(EstadoVenta.RECIBIDO);
         venta.setMetodoPago(datos.getMetodoPago());
+        // PAGO SIMULADO: este proyecto NO tiene integracion real con ningun
+        // gateway de pago (Stripe, PayPal, Mercado Pago, un banco, etc.).
+        // No existe intento de pago, autorizacion, 3DS, webhook ni id de
+        // transaccion real: elegir "TARJETA" solo marca el pago como
+        // aprobado de inmediato para poder probar el flujo completo del
+        // sistema. NUNCA se solicitan ni se guardan datos de tarjeta.
+        // El frontend (checkout.jsp) muestra un aviso explicito de que
+        // esto es una simulacion. Antes de usar este sistema con pagos
+        // reales hay que reemplazar esta linea por una integracion real:
+        // Checkout -> crear intento de pago -> gateway -> webhook de
+        // confirmacion -> recien ahi cambiar EstadoPago a APROBADO (nunca
+        // confiar en la sola eleccion del metodo de pago para aprobar).
         venta.setEstadoPago("TARJETA".equals(datos.getMetodoPago()) ? EstadoPago.APROBADO : EstadoPago.PENDIENTE);
         venta.setTipoEntrega(datos.getTipoEntrega());
         venta.setNombreCliente(datos.getNombreCompleto().trim());

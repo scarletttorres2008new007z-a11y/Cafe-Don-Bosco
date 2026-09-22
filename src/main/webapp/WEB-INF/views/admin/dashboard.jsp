@@ -19,7 +19,7 @@
 
         <div class="content">
             <div class="welcome">
-                <h1>&#161;${saludo}, ${usuario.nombre}! &#9749;</h1>
+                <h1>&#161;${saludo}, ${fn:escapeXml(usuario.nombre)}! &#9749;</h1>
                 <p>Todo listo para atender a nuestros clientes.</p>
             </div>
 

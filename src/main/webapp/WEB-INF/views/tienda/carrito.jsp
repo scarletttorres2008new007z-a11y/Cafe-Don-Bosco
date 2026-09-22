@@ -55,10 +55,10 @@
                                     </c:otherwise>
                                 </c:choose>
                                 <div>
-                                    <strong>${item.nombreProducto}</strong><br>
+                                    <strong>${fn:escapeXml(item.nombreProducto)}</strong><br>
                                     <c:if test="${not empty item.opciones}">
                                         <span class="ayuda">
-                                            <c:forEach var="opcion" items="${item.opciones}" varStatus="est">${opcion.nombreOpcion}<c:if test="${not est.last}">, </c:if></c:forEach>
+                                            <c:forEach var="opcion" items="${item.opciones}" varStatus="est">${fn:escapeXml(opcion.nombreOpcion)}<c:if test="${not est.last}">, </c:if></c:forEach>
                                         </span><br>
                                     </c:if>
                                     <span class="ayuda">$${item.precioUnitarioConOpcionesFormateado} c/u</span>

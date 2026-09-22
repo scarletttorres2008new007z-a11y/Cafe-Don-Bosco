@@ -1,5 +1,5 @@
 <div class="tarjeta-producto ${producto.disponible ? '' : 'agotada'}">
-    <button type="button" class="boton-vista-rapida" data-producto-id="${producto.id}" title="Vista rapida" aria-label="Vista rapida de ${producto.nombre}">&#128065;</button>
+    <button type="button" class="boton-vista-rapida" data-producto-id="${producto.id}" title="Vista rapida" aria-label="Vista rapida de ${fn:escapeXml(producto.nombre)}">&#128065;</button>
     <c:if test="${not producto.disponible}"><span class="badge-agotado">Agotado</span></c:if>
     <c:choose>
         <c:when test="${not empty producto.imagen}">
@@ -9,9 +9,9 @@
             <div class="imagen-producto">&#9749;</div>
         </c:otherwise>
     </c:choose>
-    <span class="etiqueta">${producto.categoriaNombre}</span>
-    <h3>${producto.nombre}</h3>
-    <p class="ayuda">${producto.descripcion}</p>
+    <span class="etiqueta">${fn:escapeXml(producto.categoriaNombre)}</span>
+    <h3>${fn:escapeXml(producto.nombre)}</h3>
+    <p class="ayuda">${fn:escapeXml(producto.descripcion)}</p>
     <span class="precio odometro">$${producto.precioFormateado}</span>
     <c:choose>
         <c:when test="${producto.disponible}"><span class="disponible">Disponible</span></c:when>

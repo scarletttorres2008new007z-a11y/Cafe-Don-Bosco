@@ -1,4 +1,5 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <div class="ticket">
     <div class="encabezado-ticket">
         <h2>&#9749; Cafe Don Bosco</h2>
@@ -13,7 +14,7 @@
         <strong>Fecha:</strong> ${venta.fechaFormateada}<br>
         <strong>Hora:</strong> ${venta.horaFormateada}<br>
         <c:if test="${not empty venta.nombreCliente}">
-            <strong>Cliente:</strong> ${venta.nombreCliente}
+            <strong>Cliente:</strong> ${fn:escapeXml(venta.nombreCliente)}
         </c:if>
     </p>
 
@@ -30,10 +31,10 @@
         <c:forEach var="detalle" items="${venta.detalles}">
             <tr>
                 <td>
-                    ${detalle.nombreProducto}
+                    ${fn:escapeXml(detalle.nombreProducto)}
                     <c:if test="${not empty detalle.opciones}">
                         <br><small class="ayuda">
-                            <c:forEach var="opcion" items="${detalle.opciones}" varStatus="est">${opcion.nombreOpcion}<c:if test="${not est.last}">, </c:if></c:forEach>
+                            <c:forEach var="opcion" items="${detalle.opciones}" varStatus="est">${fn:escapeXml(opcion.nombreOpcion)}<c:if test="${not est.last}">, </c:if></c:forEach>
                         </small>
                     </c:if>
                 </td>
