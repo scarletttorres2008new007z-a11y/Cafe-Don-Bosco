@@ -1,204 +1,36 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cafe Don Bosco</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/variables.css">
-    <link rel="stylesheet" href="assets/css/base.css">
-    <style>
-        * { box-sizing: border-box; }
-
-        body.portal-body {
-            margin: 0;
-            font-family: 'Poppins', var(--fuente-interfaz);
-            color: #fff;
-        }
-
-        .portal {
-            position: relative;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 26px;
-            padding: 40px 20px;
-            text-align: center;
-            overflow: hidden;
-            background:
-                radial-gradient(ellipse 900px 520px at 18% 8%, rgba(255, 200, 120, 0.35), transparent 60%),
-                radial-gradient(ellipse 700px 500px at 82% 78%, rgba(255, 170, 90, 0.20), transparent 65%),
-                linear-gradient(120deg, #241813 0%, #3a2717 38%, #4a3016 62%, #2c1c12 100%);
-        }
-
-        .portal::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background:
-                repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 140px),
-                radial-gradient(circle at 50% 0%, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.55) 100%);
-            pointer-events: none;
-        }
-
-        .portal > * { position: relative; z-index: 1; }
-
-        .marca-portal {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            font-family: 'Playfair Display', var(--fuente-marca);
-            font-weight: 700;
-            font-size: 2.5rem;
-            color: #e7c48f;
-            letter-spacing: 0.5px;
-            margin: 0;
-            text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
-        }
-
-        .marca-portal .taza {
-            width: 40px;
-            height: 40px;
-            flex-shrink: 0;
-        }
-
-        .subtitulo-portal {
-            margin: -14px 0 6px;
-            font-size: 1.05rem;
-            font-weight: 500;
-            color: #d8b98d;
-            letter-spacing: 0.5px;
-        }
-
-        .pregunta-portal {
-            font-size: 1.05rem;
-            color: #f1e6d8;
-            margin: 0;
-            font-weight: 500;
-        }
-
-        .opciones-portal {
-            display: flex;
-            gap: 22px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 4px;
-        }
-
-        .opcion-portal {
-            width: 260px;
-            padding: 30px 26px 26px;
-            border-radius: 18px;
-            text-decoration: none;
-            color: #fff;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.28);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .opcion-portal:hover {
-            transform: translateY(-6px);
-            background: rgba(255, 255, 255, 0.18);
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
-        }
-
-        .opcion-portal .icono-portal {
-            width: 46px;
-            height: 46px;
-            margin-bottom: 14px;
-            color: #f3ddb8;
-        }
-
-        .opcion-portal h2 {
-            font-family: 'Playfair Display', var(--fuente-marca);
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin: 0 0 10px;
-            color: #fff;
-        }
-
-        .opcion-portal p {
-            font-size: 0.85rem;
-            line-height: 1.5;
-            color: rgba(255, 255, 255, 0.85);
-            margin: 0 0 22px;
-            min-height: 60px;
-        }
-
-        .boton-portal {
-            width: 100%;
-            padding: 12px 18px;
-            border-radius: 999px;
-            border: none;
-            background: rgba(255, 255, 255, 0.92);
-            color: #3b2418;
-            font-family: 'Poppins', var(--fuente-interfaz);
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-align: center;
-            transition: background 0.2s ease, transform 0.15s ease;
-        }
-
-        .opcion-portal:hover .boton-portal {
-            background: #fff;
-            transform: scale(1.02);
-        }
-
-        @media (max-width: 560px) {
-            .marca-portal { font-size: 1.9rem; }
-            .opciones-portal { gap: 16px; }
-            .opcion-portal { width: 100%; max-width: 320px; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Portal de acceso de Café Don Bosco">
+  <title>Café Don Bosco</title>
+  <link rel="stylesheet" href="assets/css/portal.css">
 </head>
-<body class="portal-body">
-    <div class="portal">
-        <h1 class="marca-portal">
-            <svg class="taza" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-                <path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8z"/>
-                <path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/>
-                <path d="M7 5c0-1 .8-1 .8-2M11 5c0-1 .8-1 .8-2M15 5c0-1 .8-1 .8-2" stroke-linecap="round"/>
-            </svg>
-            Cafe Don Bosco
-        </h1>
-        <p class="subtitulo-portal">Buen cafe, mejores momentos</p>
-
-        <p class="pregunta-portal">&#191;Como quieres entrar?</p>
-
-        <div class="opciones-portal">
-            <a class="opcion-portal" href="login">
-                <svg class="icono-portal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <circle cx="9" cy="8" r="3.2"/>
-                    <path d="M3.5 20c0-3.6 2.5-6 5.5-6s5.5 2.4 5.5 6" stroke-linecap="round"/>
-                    <path d="M15 16.5l2.4 2.6L21.5 14" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <h2>Soy Administrador</h2>
-                <p>Gestiona el mostrador: dashboard, ventas e historial. Requiere inicio de sesion.</p>
-                <span class="boton-portal">Iniciar Sesion</span>
-            </a>
-            <a class="opcion-portal" href="tienda">
-                <svg class="icono-portal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M4 9h13v5a5.5 5.5 0 0 1-5.5 5.5h-2A5.5 5.5 0 0 1 4 14V9z"/>
-                    <path d="M17 10.5h1.6a2.2 2.2 0 0 1 0 4.4H17"/>
-                    <path d="M8 9c0-1.6 1.5-1.6 2.2-2.6C10.7 5.6 10 5 10 4" stroke-linecap="round"/>
-                    <circle cx="10.5" cy="11.6" r="2.1"/>
-                </svg>
-                <h2>Soy Consumidor</h2>
-                <p>Explora el menu y compra directo, sin necesidad de crear una cuenta.</p>
-                <span class="boton-portal">Explorar Menu</span>
-            </a>
+<body>
+  <main class="fondo">
+    <section class="portal" aria-labelledby="titulo-portal">
+      <header class="marca">
+        <div class="titulo">
+          <svg class="logo-taza" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="29" cy="44" rx="24" ry="7" fill="#d8d0c7"/><ellipse cx="29" cy="42" rx="17" ry="5" fill="#f3eee8"/><path d="M14 19h31l-3 20c-1 7-23 7-25 0z" fill="#e8dfd6" stroke="#7c5b43" stroke-width="2"/><ellipse cx="29.5" cy="20" rx="15.5" ry="8" fill="#ece3da" stroke="#745139" stroke-width="2"/><ellipse cx="29.5" cy="20" rx="11" ry="5.5" fill="#6b3d25"/><path d="M44 24c14-3 14 14 0 12" fill="none" stroke="#ded4ca" stroke-width="6"/><path d="M45 25c10-2 10 9 0 9" fill="none" stroke="#76543e" stroke-width="1.5"/></svg>
+          <h1 id="titulo-portal">Cafe Don Bosco</h1>
         </div>
-    </div>
+        <p class="lema">Buen cafe, mejores momentos</p>
+      </header>
+      <p class="pregunta">¿Como quieres entrar?</p>
+      <div class="opciones">
+        <a class="tarjeta" href="login" aria-label="Entrar como administrador">
+          <span class="icono"><svg viewBox="0 0 90 78" aria-hidden="true"><defs><linearGradient id="a" x1="0" x2="1"><stop stop-color="#bd8a63"/><stop offset="1" stop-color="#76503a"/></linearGradient></defs><rect x="38" y="9" width="43" height="37" rx="2" fill="none" stroke="#8a6146" stroke-width="3"/><path d="M46 38V23m8 15V28m8 10V20m8 18V14" stroke="#8a6146" stroke-width="3"/><path d="m44 25 10-8 8 5 13-11" fill="none" stroke="#d2aa82" stroke-width="3"/><circle cx="27" cy="27" r="13" fill="url(#a)" stroke="#6c4936" stroke-width="2"/><path d="M7 69c1-20 8-29 20-29s19 9 21 29z" fill="url(#a)" stroke="#6c4936" stroke-width="2"/></svg></span>
+          <h2>Soy Administrador</h2><p>Gestiona el mostrador:<br>dashboard, ventas e historial.<br>Requiere inicio de sesion.</p><span class="boton">Iniciar Sesión</span>
+        </a>
+        <a class="tarjeta" href="tienda" aria-label="Entrar como consumidor">
+          <span class="icono"><svg viewBox="0 0 90 72" aria-hidden="true"><defs><radialGradient id="b"><stop stop-color="#f0c985"/><stop offset=".72" stop-color="#bd7941"/><stop offset="1" stop-color="#6e442d"/></radialGradient></defs><ellipse cx="43" cy="41" rx="34" ry="22" fill="url(#b)" stroke="#6f452d" stroke-width="2"/><ellipse cx="40" cy="34" rx="24" ry="14" fill="#f0dfc1" stroke="#9e693d" stroke-width="2"/><path d="M57 34c21-5 23 18 4 18" fill="none" stroke="#79513a" stroke-width="6"/><path d="M26 36c7-10 13 4 24-8M24 31c9 1 9-8 18-6M31 41c8-9 13 1 21-6" fill="none" stroke="#fffaf0" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+          <h2>Soy Consumidor</h2><p>Explora el menu y compra<br>directo, sin necesidad de<br>crear una cuenta.</p><span class="boton">Explorar Menú</span>
+        </a>
+      </div>
+    </section>
+    <i class="grano g1"></i><i class="grano g2"></i><i class="grano g3"></i><i class="grano g4"></i><i class="grano g5"></i><i class="grano g6"></i>
+  </main>
+  <script src="assets/js/portal.js"></script>
 </body>
 </html>
