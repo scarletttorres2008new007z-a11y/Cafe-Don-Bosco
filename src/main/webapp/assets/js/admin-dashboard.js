@@ -1,0 +1,1 @@
+const menu=document.querySelector('.menu'),side=document.querySelector('.sidebar');menu.addEventListener('click',()=>side.classList.toggle('open'));document.addEventListener('click',e=>{if(innerWidth<=700&&!side.contains(e.target)&&!menu.contains(e.target))side.classList.remove('open')});

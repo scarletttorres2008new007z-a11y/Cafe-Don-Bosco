@@ -1,159 +1,213 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<!DOCTYPE html>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<!doctype html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cafe Don Bosco - Dashboard</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/variables.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/base.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin.css">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Panel administrativo | Cafe Don Bosco</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css">
 </head>
 <body>
-<div class="app-admin">
-    <%@ include file="_sidebar.jspf" %>
+<div class="app">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-row"><span class="cup">&#9749;</span><strong>Cafe<br>Don Bosco</strong></div>
+            <small>Buen cafe, mejores momentos</small>
+        </div>
+        <nav class="nav">
+            <a class="active" href="${pageContext.request.contextPath}/admin/dashboard"><span class="ico">&#8962;</span>Inicio</a>
+            <a href="${pageContext.request.contextPath}/admin/productos"><span class="ico">&#9749;</span>Productos</a>
+            <a href="${pageContext.request.contextPath}/admin/venta-nueva"><span class="ico">&#128722;</span>Nueva venta</a>
+            <a href="${pageContext.request.contextPath}/admin/historial-ventas"><span class="ico">&#9201;</span>Historial de ventas</a>
+            <a href="${pageContext.request.contextPath}/logout"><span class="ico">&#8618;</span>Cerrar sesion</a>
+        </nav>
+        <div class="sidebar-foot">
+            <div class="botanical">&#9749;</div>
+            <b>Cafe Don Bosco</b><br>Sistema de mostrador<br>v1.0
+        </div>
+    </aside>
 
-    <main class="contenido-admin">
-        <div class="encabezado-admin">
-            <div>
-                <h2>&#161;Hola, ${usuario.nombre}! &#9749;</h2>
+    <main class="main">
+        <header class="topbar">
+            <button type="button" class="menu" aria-label="Abrir menu">&#9776;</button>
+            <div class="user">
+                <span class="avatar">${usuario.nombre.substring(0,1)}</span>
+                <span><b>${usuario.nombre}</b><br>Administrador</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="welcome">
+                <h1>&#161;${saludo}, ${usuario.nombre}! &#9749;</h1>
                 <p>Todo listo para atender a nuestros clientes.</p>
             </div>
-            <div class="usuario-actual">
-                <span class="avatar">${usuario.nombre.substring(0,1)}</span>
+
+            <div class="columns">
                 <div>
-                    <strong>${usuario.nombre}</strong><br>
-                    <small>Administrador</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="fila-estadisticas">
-            <div class="tarjeta-estadistica">
-                <span class="titulo">Productos disponibles</span>
-                <span class="valor">${resumen.productosDisponibles}</span>
-            </div>
-            <div class="tarjeta-estadistica">
-                <span class="titulo">Ventas del dia</span>
-                <span class="valor">$${resumen.ventasHoyTotalFormateado}</span>
-                <span class="ayuda">${resumen.ventasHoyCantidad} ventas hoy</span>
-            </div>
-            <div class="tarjeta-estadistica">
-                <span class="titulo">Total de ventas (mes)</span>
-                <span class="valor">$${resumen.totalVentasMesFormateado}</span>
-            </div>
-        </div>
-
-        <div class="hero-admin">
-            <p class="etiqueta-superior" style="color:var(--color-cobre-claro); text-transform:uppercase; font-size:0.75rem;">Cafe Don Bosco</p>
-            <h2>El mejor cafe, siempre contigo</h2>
-            <p>Disfruta de nuestra seleccion de productos hechos con pasion y calidad.</p>
-            <a class="boton" href="${pageContext.request.contextPath}/tienda">Ver tienda &rarr;</a>
-        </div>
-
-        <div class="diseno-dos-columnas">
-            <div>
-                <div class="panel">
-                    <div class="panel-encabezado">
-                        <h3>Ventas recientes</h3>
-                        <a href="${pageContext.request.contextPath}/admin/historial-ventas">Ver historial &rarr;</a>
-                    </div>
-                    <c:choose>
-                        <c:when test="${empty resumen.ventasRecientes}">
-                            <p class="estado-vacio">Todavia no hay ventas registradas.</p>
-                        </c:when>
-                        <c:otherwise>
-                            <table class="tabla">
-                                <thead>
-                                <tr>
-                                    <th># Venta</th>
-                                    <th>Fecha</th>
-                                    <th>Origen</th>
-                                    <th>Total</th>
-                                    <th>Estado</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <c:forEach var="venta" items="${resumen.ventasRecientes}">
-                                    <tr>
-                                        <td>#000${venta.id}</td>
-                                        <td>${venta.fechaFormateada}</td>
-                                        <td>${venta.tipoVenta} <c:if test="${not empty venta.nombreCliente}"> - ${venta.nombreCliente}</c:if></td>
-                                        <td>$${venta.totalFormateado}</td>
-                                        <td>${venta.estado}</td>
-                                    </tr>
-                                </c:forEach>
-                                </tbody>
-                            </table>
-                        </c:otherwise>
-                    </c:choose>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-encabezado">
-                        <h3>&#9733; Productos destacados</h3>
-                        <a href="${pageContext.request.contextPath}/admin/productos">Ver todos &rarr;</a>
-                    </div>
-                    <div class="grid-productos-admin">
-                        <c:forEach var="producto" items="${destacados}">
-                            <div class="tarjeta-producto-admin">
-                                <strong>${producto.nombre}</strong>
-                                <span class="ayuda">${producto.categoriaNombre}</span>
-                                <span class="precio">$${producto.precioFormateado}</span>
+                    <section class="stats">
+                        <article class="stat">
+                            <span class="stat-icon">&#9749;</span>
+                            <div>
+                                <small>Productos disponibles</small>
+                                <b>${resumen.productosDisponibles}</b>
                                 <c:choose>
-                                    <c:when test="${producto.disponible}"><span class="disponible">Disponible</span></c:when>
-                                    <c:otherwise><span class="no-disponible">Agotado</span></c:otherwise>
+                                    <c:when test="${not empty resumen.productosStockBajo}">
+                                        <span class="warn">&#9888; ${resumen.productosStockBajo.size()} con stock bajo</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="up">Catalogo activo</span>
+                                    </c:otherwise>
                                 </c:choose>
                             </div>
-                        </c:forEach>
-                    </div>
-                </div>
-            </div>
-
-            <div>
-                <div class="panel">
-                    <div class="panel-encabezado">
-                        <h3>&#9889; Accesos rapidos</h3>
-                    </div>
-                    <div class="accesos-rapidos">
-                        <a class="acceso-rapido destacado" href="${pageContext.request.contextPath}/admin/venta-nueva">
-                            <strong>&#128722; Nueva venta</strong>
-                            <span>Registrar una venta</span>
-                        </a>
-                        <a class="acceso-rapido" href="${pageContext.request.contextPath}/admin/productos">
-                            <strong>&#9749; Ver productos</strong>
-                            <span>Explorar catalogo</span>
-                        </a>
-                        <a class="acceso-rapido" href="${pageContext.request.contextPath}/admin/historial-ventas">
-                            <strong>&#128337; Historial de ventas</strong>
-                            <span>Consultar ventas anteriores</span>
-                        </a>
-                        <a class="acceso-rapido" href="${pageContext.request.contextPath}/logout">
-                            <strong>&#8618; Cerrar sesion</strong>
-                            <span>Salir del sistema</span>
-                        </a>
-                    </div>
-                </div>
-
-                <c:if test="${not empty resumen.productosStockBajo}">
-                    <div class="panel">
-                        <div class="panel-encabezado">
-                            <h3>&#9888; Stock bajo</h3>
-                        </div>
-                        <c:forEach var="producto" items="${resumen.productosStockBajo}">
-                            <div class="pos-producto">
-                                <div class="info">
-                                    <strong>${producto.nombre}</strong>
-                                    <span>${producto.stock} unidades (minimo ${producto.stockMinimo})</span>
-                                </div>
+                        </article>
+                        <article class="stat">
+                            <span class="stat-icon">&#128722;</span>
+                            <div>
+                                <small>Ventas del dia</small>
+                                <b>$${resumen.ventasHoyTotalFormateado}</b>
+                                <span class="up">${resumen.ventasHoyCantidad} pedidos hoy</span>
                             </div>
-                        </c:forEach>
-                    </div>
-                </c:if>
+                        </article>
+                        <article class="stat">
+                            <span class="stat-icon">&#9635;</span>
+                            <div>
+                                <small>Total de ventas</small>
+                                <b>$${resumen.ingresosTotalesFormateado}</b>
+                                <span class="up">$${resumen.totalVentasMesFormateado} este mes</span>
+                            </div>
+                        </article>
+                    </section>
+
+                    <section class="hero">
+                        <em>Cafe Don Bosco</em>
+                        <h2>El mejor cafe,<br>siempre contigo</h2>
+                        <p>Disfruta de nuestra seleccion de productos<br>hechos con pasion y calidad.</p>
+                        <a href="${pageContext.request.contextPath}/admin/productos">Ver catalogo &rarr;</a>
+                    </section>
+
+                    <section class="panel" id="productos">
+                        <div class="panel-title">
+                            <h3>&#9733; &nbsp; Productos destacados</h3>
+                            <a href="${pageContext.request.contextPath}/admin/productos">Ver todos &rarr;</a>
+                        </div>
+                        <c:choose>
+                            <c:when test="${empty destacados}">
+                                <p style="font-size:11px;color:#777;">Todavia no hay productos activos.</p>
+                            </c:when>
+                            <c:otherwise>
+                                <div class="products">
+                                    <c:forEach var="producto" items="${destacados}">
+                                        <article class="product">
+                                            <c:choose>
+                                                <c:when test="${fn:containsIgnoreCase(producto.nombre, 'americano')}">
+                                                    <div class="pic" style="background-image:url('${pageContext.request.contextPath}/assets/img/americano.jpg')"></div>
+                                                </c:when>
+                                                <c:when test="${producto.categoriaNombre == 'Cafe'}">
+                                                    <div class="pic" style="background-image:url('${pageContext.request.contextPath}/assets/img/capuchino.jpg')"></div>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <div class="pic" style="background-image:url('${pageContext.request.contextPath}/assets/img/productos.jpg')"></div>
+                                                </c:otherwise>
+                                            </c:choose>
+                                            <h4>${producto.nombre}</h4>
+                                            <small>${producto.categoriaNombre}</small>
+                                            <div class="price">$${producto.precioFormateado}</div>
+                                            <c:choose>
+                                                <c:when test="${producto.disponible}">
+                                                    <div class="stock">&#9679; Disponible</div>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <div class="stock" style="color:#b23b2f;">&#9679; Agotado</div>
+                                                </c:otherwise>
+                                            </c:choose>
+                                            <a class="detail" href="${pageContext.request.contextPath}/admin/productos">Ver detalle</a>
+                                        </article>
+                                    </c:forEach>
+                                </div>
+                            </c:otherwise>
+                        </c:choose>
+                    </section>
+                </div>
+
+                <aside class="right">
+                    <section class="panel sales" id="ventas">
+                        <div class="panel-title">
+                            <h3>&#9638; &nbsp; Ventas recientes</h3>
+                            <a href="${pageContext.request.contextPath}/admin/historial-ventas">Ver historial &rarr;</a>
+                        </div>
+                        <c:choose>
+                            <c:when test="${empty resumen.ventasRecientes}">
+                                <p style="font-size:11px;color:#777;">Todavia no hay ventas registradas.</p>
+                            </c:when>
+                            <c:otherwise>
+                                <table>
+                                    <thead>
+                                    <tr>
+                                        <th># Venta</th>
+                                        <th>Fecha</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <c:forEach var="venta" items="${resumen.ventasRecientes}">
+                                        <tr>
+                                            <td><b>#000${venta.id}</b></td>
+                                            <td>${venta.fechaFormateada}</td>
+                                            <td>$${venta.totalFormateado}</td>
+                                            <td>${venta.estado}</td>
+                                        </tr>
+                                    </c:forEach>
+                                    </tbody>
+                                </table>
+                            </c:otherwise>
+                        </c:choose>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-title"><h3>&#9889; &nbsp; Accesos rapidos</h3></div>
+                        <div class="quick">
+                            <a href="${pageContext.request.contextPath}/admin/venta-nueva">
+                                <span class="ico">&#128722;</span>
+                                <span><b>Nueva venta</b><small>Registrar una venta</small></span>
+                            </a>
+                            <a href="${pageContext.request.contextPath}/admin/productos">
+                                <span class="ico">&#9635;</span>
+                                <span><b>Ver productos</b><small>Explorar catalogo</small></span>
+                            </a>
+                            <a href="${pageContext.request.contextPath}/admin/historial-ventas">
+                                <span class="ico">&#9201;</span>
+                                <span><b>Historial de ventas</b><small>Consultar ventas anteriores</small></span>
+                            </a>
+                            <a href="${pageContext.request.contextPath}/logout">
+                                <span class="ico">&#8618;</span>
+                                <span><b>Cerrar sesion</b><small>Salir del sistema</small></span>
+                            </a>
+                        </div>
+                    </section>
+
+                    <c:if test="${not empty resumen.productosStockBajo}">
+                        <section class="panel">
+                            <div class="panel-title"><h3>&#9888; &nbsp; Stock bajo</h3></div>
+                            <div class="lowstock">
+                                <c:forEach var="producto" items="${resumen.productosStockBajo}">
+                                    <div class="item">
+                                        <b>${producto.nombre}</b>
+                                        <span>${producto.stock} u. (min ${producto.stockMinimo})</span>
+                                    </div>
+                                </c:forEach>
+                            </div>
+                        </section>
+                    </c:if>
+
+                    <div class="signature">Cafe Don Bosco<small>Tradicion que se disfruta</small></div>
+                </aside>
             </div>
         </div>
     </main>
 </div>
+<script src="${pageContext.request.contextPath}/assets/js/admin-dashboard.js"></script>
 </body>
 </html>

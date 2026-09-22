@@ -11,6 +11,7 @@ import sv.udb.cafedonbosco.service.DashboardService;
 import sv.udb.cafedonbosco.service.ProductoService;
 import sv.udb.cafedonbosco.service.impl.DashboardServiceImpl;
 import sv.udb.cafedonbosco.service.impl.ProductoServiceImpl;
+import sv.udb.cafedonbosco.util.FechaUtil;
 import sv.udb.cafedonbosco.util.SessionUtil;
 
 import java.io.IOException;
@@ -30,6 +31,7 @@ public class DashboardViewServlet extends HttpServlet {
         request.setAttribute("activo", "dashboard");
         request.setAttribute("usuario", SessionUtil.obtenerUsuarioAutenticado(request));
         request.setAttribute("resumen", dashboardService.obtenerResumen());
+        request.setAttribute("saludo", FechaUtil.obtenerSaludo());
 
         List<ProductoResponseDTO> destacados = productoService.listarCatalogo(null, null, "nombre");
         request.setAttribute("destacados", destacados.subList(0, Math.min(4, destacados.size())));

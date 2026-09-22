@@ -26,4 +26,16 @@ public final class FechaUtil {
     public static LocalTime obtenerHoraActual() {
         return ZonedDateTime.now(ZONA_EL_SALVADOR).toLocalTime();
     }
+
+    /** Saludo segun la hora real de El Salvador, para encabezados de vistas. */
+    public static String obtenerSaludo() {
+        int hora = obtenerHoraActual().getHour();
+        if (hora < 12) {
+            return "Buenos dias";
+        }
+        if (hora < 19) {
+            return "Buenas tardes";
+        }
+        return "Buenas noches";
+    }
 }

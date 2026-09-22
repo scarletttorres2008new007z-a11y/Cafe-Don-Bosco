@@ -11,6 +11,7 @@ import sv.udb.cafedonbosco.model.TipoVenta;
 import sv.udb.cafedonbosco.model.Venta;
 import sv.udb.cafedonbosco.util.ConexionBD;
 import sv.udb.cafedonbosco.util.Constantes;
+import sv.udb.cafedonbosco.util.FechaUtil;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -380,18 +381,31 @@ public class VentaDAOImpl implements VentaDAO {
         // Una venta con el pago aun PENDIENTE (p. ej. contra entrega o
         // transferencia sin confirmar) todavia no es un ingreso real, asi
         // que no debe sumar al total del dia hasta que se apruebe.
+        // "Hoy" se calcula con la hora real de El Salvador (FechaUtil), no con
+        // CURDATE(): el servidor de BD corre en UTC, asi que CURDATE() cambia
+        // de dia varias horas antes que en El Salvador.
         String sql = "SELECT COALESCE(SUM(total), 0) FROM venta "
-                + "WHERE DATE(fecha) = CURDATE() AND estado <> 'CANCELADO' AND estado_pago = 'APROBADO'";
-        return ejecutarSuma(sql);
+                + "WHERE DATE(fecha) = ? AND estado <> 'CANCELADO' AND estado_pago = 'APROBADO'";
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setObject(1, FechaUtil.obtenerFechaHoraActual().toLocalDate());
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getBigDecimal(1) : BigDecimal.ZERO;
+            }
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al calcular el total de ventas", e);
+        }
     }
 
     @Override
     public int contarVentasDelDia() {
-        String sql = "SELECT COUNT(*) FROM venta WHERE DATE(fecha) = CURDATE() AND estado <> 'CANCELADO'";
+        String sql = "SELECT COUNT(*) FROM venta WHERE DATE(fecha) = ? AND estado <> 'CANCELADO'";
         try (Connection conexion = ConexionBD.obtenerConexion();
-             PreparedStatement stmt = conexion.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            return rs.next() ? rs.getInt(1) : 0;
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setObject(1, FechaUtil.obtenerFechaHoraActual().toLocalDate());
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
         } catch (SQLException e) {
             throw new ErrorInternoException("Error al contar las ventas del dia", e);
         }
@@ -399,10 +413,20 @@ public class VentaDAOImpl implements VentaDAO {
 
     @Override
     public BigDecimal sumarTotalDelMes() {
+        LocalDateTime ahora = FechaUtil.obtenerFechaHoraActual();
         String sql = "SELECT COALESCE(SUM(total), 0) FROM venta "
-                + "WHERE YEAR(fecha) = YEAR(CURDATE()) AND MONTH(fecha) = MONTH(CURDATE()) "
+                + "WHERE YEAR(fecha) = ? AND MONTH(fecha) = ? "
                 + "AND estado <> 'CANCELADO' AND estado_pago = 'APROBADO'";
-        return ejecutarSuma(sql);
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setInt(1, ahora.getYear());
+            stmt.setInt(2, ahora.getMonthValue());
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getBigDecimal(1) : BigDecimal.ZERO;
+            }
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al calcular el total de ventas", e);
+        }
     }
 
     @Override
