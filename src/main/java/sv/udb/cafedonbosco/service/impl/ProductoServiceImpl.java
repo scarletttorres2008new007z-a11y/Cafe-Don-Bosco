@@ -154,6 +154,9 @@ public class ProductoServiceImpl implements ProductoService {
         } catch (SQLException e) {
             revertir(conexion);
             throw new ErrorInternoException("Error al crear el producto con su inventario inicial", e);
+        } catch (RuntimeException e) {
+            revertir(conexion);
+            throw e;
         } finally {
             cerrar(conexion);
         }
@@ -208,6 +211,9 @@ public class ProductoServiceImpl implements ProductoService {
         } catch (SQLException e) {
             revertir(conexion);
             throw new ErrorInternoException("Error al actualizar el producto y su inventario", e);
+        } catch (RuntimeException e) {
+            revertir(conexion);
+            throw e;
         } finally {
             cerrar(conexion);
         }

@@ -7,6 +7,7 @@ import sv.udb.cafedonbosco.exception.ErrorInternoException;
 import sv.udb.cafedonbosco.model.DetalleVenta;
 import sv.udb.cafedonbosco.model.EstadoPago;
 import sv.udb.cafedonbosco.model.EstadoVenta;
+import sv.udb.cafedonbosco.model.OpcionSeleccionada;
 import sv.udb.cafedonbosco.model.TipoVenta;
 import sv.udb.cafedonbosco.model.Venta;
 import sv.udb.cafedonbosco.util.ConexionBD;
@@ -241,8 +242,9 @@ public class VentaDAOImpl implements VentaDAO {
             ventasPorId.put(venta.getId(), venta);
         }
         String marcadores = String.join(",", Collections.nCopies(ventas.size(), "?"));
-        String sql = "SELECT venta_id, producto_id, nombre_producto, cantidad, precio_unitario, subtotal "
+        String sql = "SELECT id, venta_id, producto_id, nombre_producto, cantidad, precio_unitario, subtotal "
                 + "FROM detalle_venta WHERE venta_id IN (" + marcadores + ")";
+        List<DetalleVenta> todosLosDetalles = new ArrayList<>();
         try (PreparedStatement stmt = conexion.prepareStatement(sql)) {
             int indice = 1;
             for (Venta venta : ventas) {
@@ -252,16 +254,31 @@ public class VentaDAOImpl implements VentaDAO {
                 while (rs.next()) {
                     Venta venta = ventasPorId.get(rs.getInt("venta_id"));
                     if (venta != null) {
-                        venta.getDetalles().add(new DetalleVenta(
+                        DetalleVenta detalle = new DetalleVenta(
                                 rs.getInt("producto_id"),
                                 rs.getString("nombre_producto"),
                                 rs.getInt("cantidad"),
                                 rs.getBigDecimal("precio_unitario"),
                                 rs.getBigDecimal("subtotal")
-                        ));
+                        );
+                        detalle.setId(rs.getInt("id"));
+                        detalle.setVentaId(rs.getInt("venta_id"));
+                        venta.getDetalles().add(detalle);
+                        todosLosDetalles.add(detalle);
                     }
                 }
             }
+        }
+        // Igual que el detalle_venta de arriba: una sola consulta IN (...)
+        // para las opciones de todos los detalles, en vez de una consulta
+        // por detalle (ver DetalleVentaOpcionDAO.listarPorDetalles).
+        List<Integer> detalleIds = new ArrayList<>();
+        for (DetalleVenta detalle : todosLosDetalles) {
+            detalleIds.add(detalle.getId());
+        }
+        Map<Integer, List<OpcionSeleccionada>> opcionesPorDetalle = detalleVentaOpcionDAO.listarPorDetalles(conexion, detalleIds);
+        for (DetalleVenta detalle : todosLosDetalles) {
+            detalle.setOpciones(opcionesPorDetalle.get(detalle.getId()));
         }
     }
 

@@ -195,4 +195,25 @@ class CarritoServiceImplTest {
         assertEquals(1, carrito.getItems().get(1).getOpciones().size());
         assertEquals(new BigDecimal("3.00"), carrito.getItems().get(1).getSubtotal());
     }
+
+    @Test
+    void agregarUnaUnidadMasSinOpcionesNoBorraLaPersonalizacionYaElegida() {
+        // Regresion: el boton "+1" del carrito, la tarjeta del catalogo y la
+        // vista rapida agregan el mismo producto sin mandar opciones. Antes
+        // de la correccion eso reemplazaba (borraba) la personalizacion que
+        // la linea ya tenia, cobrando el precio base y perdiendo el pedido
+        // real del cliente (ej. "Leche de almendra").
+        when(productoDAO.buscarPorId(1)).thenReturn(productoActivo(1, "Cafe Latte", "2.50"));
+        when(inventarioDAO.buscarPorProducto(1)).thenReturn(inventarioConStock(1, 10));
+        OpcionSeleccionada leche = new OpcionSeleccionada(5, "Tipo de leche", "Leche de almendra", new BigDecimal("0.50"));
+        when(personalizacionService.validarYResolverOpciones(1, List.of(5))).thenReturn(List.of(leche));
+
+        Carrito carrito = new Carrito();
+        carritoService.agregarProducto(carrito, 1, 1, List.of(5));
+        carritoService.agregarProducto(carrito, 1, 1, null);
+
+        assertEquals(2, carrito.getItems().get(1).getCantidad());
+        assertEquals(1, carrito.getItems().get(1).getOpciones().size(), "la opcion elegida no debio perderse");
+        assertEquals(new BigDecimal("6.00"), carrito.getItems().get(1).getSubtotal());
+    }
 }

@@ -20,9 +20,14 @@ public class Carrito implements Serializable {
             existente.setCantidad(existente.getCantidad() + nuevo.getCantidad());
             // El carrito solo guarda una linea por producto: si el cliente
             // vuelve a agregar el mismo producto con una personalizacion
-            // distinta, la nueva reemplaza a la anterior para toda la
-            // linea (no se separan en dos lineas independientes).
-            existente.setOpciones(nuevo.getOpciones());
+            // distinta (desde la ficha del producto), la nueva reemplaza a
+            // la anterior para toda la linea (no se separan en dos lineas
+            // independientes). Pero un simple "+1" sin opciones (boton del
+            // carrito, tarjeta del catalogo, vista rapida) no debe borrar
+            // la personalizacion que la linea ya tenia.
+            if (nuevo.getOpciones() != null && !nuevo.getOpciones().isEmpty()) {
+                existente.setOpciones(nuevo.getOpciones());
+            }
         } else {
             items.put(nuevo.getProductoId(), nuevo);
         }

@@ -10,7 +10,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DetalleVentaOpcionDAOImpl implements DetalleVentaOpcionDAO {
 
@@ -56,6 +59,39 @@ public class DetalleVentaOpcionDAOImpl implements DetalleVentaOpcionDAO {
             return opciones;
         } catch (SQLException e) {
             throw new ErrorInternoException("Error al listar las opciones del detalle de venta", e);
+        }
+    }
+
+    @Override
+    public Map<Integer, List<OpcionSeleccionada>> listarPorDetalles(Connection conexion, List<Integer> detalleVentaIds) {
+        Map<Integer, List<OpcionSeleccionada>> resultado = new HashMap<>();
+        if (detalleVentaIds.isEmpty()) {
+            return resultado;
+        }
+        String marcadores = String.join(",", Collections.nCopies(detalleVentaIds.size(), "?"));
+        String sql = "SELECT detalle_venta_id, opcion_id, nombre_grupo, nombre_opcion, precio_aplicado "
+                + "FROM detalle_venta_opcion WHERE detalle_venta_id IN (" + marcadores + ")";
+        try (PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            int indice = 1;
+            for (Integer detalleVentaId : detalleVentaIds) {
+                stmt.setInt(indice++, detalleVentaId);
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    int detalleVentaId = rs.getInt("detalle_venta_id");
+                    int opcionId = rs.getInt("opcion_id");
+                    OpcionSeleccionada opcion = new OpcionSeleccionada(
+                            rs.wasNull() ? null : opcionId,
+                            rs.getString("nombre_grupo"),
+                            rs.getString("nombre_opcion"),
+                            rs.getBigDecimal("precio_aplicado")
+                    );
+                    resultado.computeIfAbsent(detalleVentaId, k -> new ArrayList<>()).add(opcion);
+                }
+            }
+            return resultado;
+        } catch (SQLException e) {
+            throw new ErrorInternoException("Error al listar las opciones de los detalles de venta", e);
         }
     }
 }
