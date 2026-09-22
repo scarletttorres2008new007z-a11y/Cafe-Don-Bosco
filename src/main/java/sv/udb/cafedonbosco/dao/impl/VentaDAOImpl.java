@@ -23,7 +23,10 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class VentaDAOImpl implements VentaDAO {
 
@@ -214,9 +217,51 @@ public class VentaDAOImpl implements VentaDAO {
                 stmt.setString(indice++, tipoVenta.name());
             }
             stmt.setInt(indice, limite);
-            return ejecutarListado(stmt);
+            List<Venta> ventas = ejecutarListado(stmt);
+            cargarDetallesEnLote(conexion, ventas);
+            return ventas;
         } catch (SQLException e) {
             throw new ErrorInternoException("Error al listar el historial de ventas", e);
+        }
+    }
+
+    /**
+     * El historial es una lista acotada (ver "limite") que el administrador
+     * consulta bajo demanda, no un endpoint de alto trafico, asi que una
+     * sola consulta IN (...) para traer todos los items es preferible a
+     * abrir una consulta por cada venta (N+1).
+     */
+    private void cargarDetallesEnLote(Connection conexion, List<Venta> ventas) throws SQLException {
+        if (ventas.isEmpty()) {
+            return;
+        }
+        Map<Integer, Venta> ventasPorId = new HashMap<>();
+        for (Venta venta : ventas) {
+            venta.setDetalles(new ArrayList<>());
+            ventasPorId.put(venta.getId(), venta);
+        }
+        String marcadores = String.join(",", Collections.nCopies(ventas.size(), "?"));
+        String sql = "SELECT venta_id, producto_id, nombre_producto, cantidad, precio_unitario, subtotal "
+                + "FROM detalle_venta WHERE venta_id IN (" + marcadores + ")";
+        try (PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            int indice = 1;
+            for (Venta venta : ventas) {
+                stmt.setInt(indice++, venta.getId());
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Venta venta = ventasPorId.get(rs.getInt("venta_id"));
+                    if (venta != null) {
+                        venta.getDetalles().add(new DetalleVenta(
+                                rs.getInt("producto_id"),
+                                rs.getString("nombre_producto"),
+                                rs.getInt("cantidad"),
+                                rs.getBigDecimal("precio_unitario"),
+                                rs.getBigDecimal("subtotal")
+                        ));
+                    }
+                }
+            }
         }
     }
 

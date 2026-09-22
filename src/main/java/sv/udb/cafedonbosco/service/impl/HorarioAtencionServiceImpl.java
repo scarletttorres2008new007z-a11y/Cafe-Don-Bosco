@@ -46,8 +46,7 @@ public class HorarioAtencionServiceImpl implements HorarioAtencionService {
             throw new LocalCerradoException("No hay horario de atencion configurado para el dia de hoy.");
         }
 
-        boolean dentroDeHorario = !horaActual.isBefore(horario.getHoraApertura())
-                && !horaActual.isAfter(horario.getHoraCierre());
+        boolean dentroDeHorario = estaDentroDelHorario(horaActual, horario.getHoraApertura(), horario.getHoraCierre());
         boolean canalPermitido = tipoVenta == TipoVenta.WEB
                 ? Boolean.TRUE.equals(horario.getPermitirPedidosApp())
                 : Boolean.TRUE.equals(horario.getPermitirPedidosLocal());
@@ -70,8 +69,7 @@ public class HorarioAtencionServiceImpl implements HorarioAtencionService {
         LocalTime horaActual = ahora.toLocalTime();
 
         boolean abierto = horario != null
-                && !horaActual.isBefore(horario.getHoraApertura())
-                && !horaActual.isAfter(horario.getHoraCierre());
+                && estaDentroDelHorario(horaActual, horario.getHoraApertura(), horario.getHoraCierre());
 
         return new EstadoLocalResponseDTO(
                 abierto,
@@ -82,6 +80,20 @@ public class HorarioAtencionServiceImpl implements HorarioAtencionService {
                 abierto ? "Estamos abiertos. Puedes hacer tu pedido."
                         : "Local cerrado. No se reciben pedidos en este momento."
         );
+    }
+
+    /**
+     * Todos los horarios reales del negocio caen dentro del mismo dia
+     * (ej. 06:30 a 20:30), pero el calculo no debe asumirlo: si algun dia
+     * se configura un cierre despues de medianoche (cierre < apertura),
+     * el rango cruza a la madrugada del dia siguiente y una comparacion
+     * directa de LocalTime lo interpretaria al reves.
+     */
+    private boolean estaDentroDelHorario(LocalTime horaActual, LocalTime apertura, LocalTime cierre) {
+        if (!cierre.isBefore(apertura)) {
+            return !horaActual.isBefore(apertura) && !horaActual.isAfter(cierre);
+        }
+        return !horaActual.isBefore(apertura) || !horaActual.isAfter(cierre);
     }
 
     @Override

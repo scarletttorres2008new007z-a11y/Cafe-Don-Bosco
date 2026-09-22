@@ -225,6 +225,22 @@ public class VentaResponseDTO {
         return FormatoUtil.moneda(total);
     }
 
+    /** Resumen tipo "2x Croissant, 1x Cafe Latte" para listados administrativos. */
+    public String getDescripcionItems() {
+        if (detalles == null || detalles.isEmpty()) {
+            return "";
+        }
+        StringBuilder resumen = new StringBuilder();
+        for (int i = 0; i < detalles.size(); i++) {
+            DetalleVentaResponseDTO detalle = detalles.get(i);
+            if (i > 0) {
+                resumen.append(", ");
+            }
+            resumen.append(detalle.getCantidad()).append("x ").append(detalle.getNombreProducto());
+        }
+        return resumen.toString();
+    }
+
     public String getTokenTicket() {
         return tokenTicket;
     }
