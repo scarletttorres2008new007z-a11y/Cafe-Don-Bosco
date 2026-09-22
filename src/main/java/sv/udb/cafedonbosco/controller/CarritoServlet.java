@@ -51,13 +51,13 @@ public class CarritoServlet extends BaseServlet {
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            int productoId = extraerProductoId(request);
+            String claveLinea = extraerClaveLinea(request);
             CarritoItemRequestDTO datos = JsonUtil.leerCuerpo(request, CarritoItemRequestDTO.class);
             if (datos == null || datos.getCantidad() == null) {
                 throw new ValidacionException("Debes indicar la nueva cantidad.");
             }
             Carrito carrito = SessionUtil.obtenerOCrearCarrito(request);
-            carritoService.actualizarCantidad(carrito, productoId, datos.getCantidad());
+            carritoService.actualizarCantidad(carrito, claveLinea, datos.getCantidad());
             JsonUtil.exito(response, HttpServletResponse.SC_OK, "Cantidad actualizada", carritoService.obtenerResumen(carrito));
         } catch (Exception e) {
             manejarError(response, e);
@@ -74,23 +74,26 @@ public class CarritoServlet extends BaseServlet {
                 JsonUtil.exito(response, HttpServletResponse.SC_OK, "Carrito vaciado", carritoService.obtenerResumen(carrito));
                 return;
             }
-            int productoId = extraerProductoId(request);
-            carritoService.eliminarProducto(carrito, productoId);
+            carritoService.eliminarProducto(carrito, extraerClaveLinea(request));
             JsonUtil.exito(response, HttpServletResponse.SC_OK, "Producto eliminado del carrito", carritoService.obtenerResumen(carrito));
         } catch (Exception e) {
             manejarError(response, e);
         }
     }
 
-    private int extraerProductoId(HttpServletRequest request) {
+    /**
+     * La linea del carrito se identifica por CarritoItem.getClaveLinea()
+     * (producto + personalizacion exacta, ej. "5|3,7"), no solo por el id
+     * del producto: dos personalizaciones distintas del mismo producto son
+     * dos lineas independientes y necesitan poder actualizarse/eliminarse
+     * por separado. El cliente debe url-encodear el valor de claveLinea
+     * que le devolvio el GET al construir esta URL.
+     */
+    private String extraerClaveLinea(HttpServletRequest request) {
         String pathInfo = request.getPathInfo();
         if (pathInfo == null || pathInfo.length() < 2) {
-            throw new ValidacionException("Debes indicar el id del producto en la URL.");
+            throw new ValidacionException("Debes indicar la linea del carrito en la URL.");
         }
-        try {
-            return Integer.parseInt(pathInfo.substring(1));
-        } catch (NumberFormatException e) {
-            throw new ValidacionException("El id del producto no es valido.");
-        }
+        return pathInfo.substring(1);
     }
 }

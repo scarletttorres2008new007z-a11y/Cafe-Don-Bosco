@@ -47,19 +47,23 @@ public class CarritoViewServlet extends TiendaBaseServlet {
                     int cantidad = parametroCantidad(request, 1);
                     carritoService.agregarProducto(carrito, productoId, cantidad, parametroOpcionIds(request));
                 }
-                case "decrementar" -> {
-                    int productoId = Integer.parseInt(request.getParameter("productoId"));
-                    CarritoItem actual = carrito.getItems().get(productoId);
-                    if (actual != null && actual.getCantidad() > 1) {
-                        carritoService.actualizarCantidad(carrito, productoId, actual.getCantidad() - 1);
-                    } else {
-                        carritoService.eliminarProducto(carrito, productoId);
+                case "incrementar" -> {
+                    String claveLinea = request.getParameter("claveLinea");
+                    CarritoItem actual = carrito.getItems().get(claveLinea);
+                    if (actual != null) {
+                        carritoService.actualizarCantidad(carrito, claveLinea, actual.getCantidad() + 1);
                     }
                 }
-                case "eliminar" -> {
-                    int productoId = Integer.parseInt(request.getParameter("productoId"));
-                    carritoService.eliminarProducto(carrito, productoId);
+                case "decrementar" -> {
+                    String claveLinea = request.getParameter("claveLinea");
+                    CarritoItem actual = carrito.getItems().get(claveLinea);
+                    if (actual != null && actual.getCantidad() > 1) {
+                        carritoService.actualizarCantidad(carrito, claveLinea, actual.getCantidad() - 1);
+                    } else {
+                        carritoService.eliminarProducto(carrito, claveLinea);
+                    }
                 }
+                case "eliminar" -> carritoService.eliminarProducto(carrito, request.getParameter("claveLinea"));
                 case "vaciar" -> carritoService.vaciar(carrito);
                 default -> {
                     // Sin accion reconocida: no se hace nada especial.

@@ -5,6 +5,7 @@ import sv.udb.cafedonbosco.util.FormatoUtil;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Item del carrito de compras. El carrito vive en la sesion HTTP y no se
@@ -98,6 +99,25 @@ public class CarritoItem {
 
     public void setOpciones(List<OpcionSeleccionada> opciones) {
         this.opciones = opciones != null ? opciones : new ArrayList<>();
+    }
+
+    /**
+     * Identifica una linea del carrito por producto + personalizacion
+     * exacta (no solo por productoId): dos elecciones distintas del mismo
+     * producto (ej. Cafe Latte + Leche de almendra vs Cafe Latte + Leche
+     * de avena) deben vivir en lineas separadas, mientras que la misma
+     * eleccion exacta debe agruparse en una sola linea sin importar el
+     * orden en que se marcaron las opciones. Determinista: mismo producto
+     * + mismo conjunto de opcionId (ordenado) => misma clave.
+     */
+    public String getClaveLinea() {
+        String idsOrdenados = opciones.stream()
+                .map(OpcionSeleccionada::getOpcionId)
+                .filter(id -> id != null)
+                .sorted()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+        return productoId + "|" + idsOrdenados;
     }
 
     public BigDecimal getPrecioAdicionalOpciones() {

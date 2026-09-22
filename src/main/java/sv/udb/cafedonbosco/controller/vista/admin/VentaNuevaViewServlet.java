@@ -66,18 +66,15 @@ public class VentaNuevaViewServlet extends HttpServlet {
                     carritoService.agregarProducto(carritoAdmin, productoId, 1);
                 }
                 case "decrementar" -> {
-                    int productoId = Integer.parseInt(request.getParameter("productoId"));
-                    CarritoItem actual = carritoAdmin.getItems().get(productoId);
+                    String claveLinea = request.getParameter("claveLinea");
+                    CarritoItem actual = carritoAdmin.getItems().get(claveLinea);
                     if (actual != null && actual.getCantidad() > 1) {
-                        carritoService.actualizarCantidad(carritoAdmin, productoId, actual.getCantidad() - 1);
+                        carritoService.actualizarCantidad(carritoAdmin, claveLinea, actual.getCantidad() - 1);
                     } else {
-                        carritoService.eliminarProducto(carritoAdmin, productoId);
+                        carritoService.eliminarProducto(carritoAdmin, claveLinea);
                     }
                 }
-                case "eliminar" -> {
-                    int productoId = Integer.parseInt(request.getParameter("productoId"));
-                    carritoService.eliminarProducto(carritoAdmin, productoId);
-                }
+                case "eliminar" -> carritoService.eliminarProducto(carritoAdmin, request.getParameter("claveLinea"));
                 case "vaciar" -> carritoService.vaciar(carritoAdmin);
                 case "confirmar" -> {
                     int ventaId = confirmarVenta(request, carritoAdmin);

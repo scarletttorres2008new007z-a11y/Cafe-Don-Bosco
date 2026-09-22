@@ -67,21 +67,20 @@
                             <div class="controles-cantidad">
                                 <form method="post" action="${pageContext.request.contextPath}/tienda/carrito">
                                     <input type="hidden" name="accion" value="decrementar">
-                                    <input type="hidden" name="productoId" value="${item.productoId}">
+                                    <input type="hidden" name="claveLinea" value="${item.claveLinea}">
                                     <button type="submit">-</button>
                                 </form>
                                 <span>${item.cantidad}</span>
                                 <form method="post" action="${pageContext.request.contextPath}/tienda/carrito">
-                                    <input type="hidden" name="accion" value="agregar">
-                                    <input type="hidden" name="productoId" value="${item.productoId}">
-                                    <input type="hidden" name="cantidad" value="1">
+                                    <input type="hidden" name="accion" value="incrementar">
+                                    <input type="hidden" name="claveLinea" value="${item.claveLinea}">
                                     <button type="submit">+</button>
                                 </form>
                             </div>
                             <strong>$${item.subtotalFormateado}</strong>
                             <form method="post" action="${pageContext.request.contextPath}/tienda/carrito">
                                 <input type="hidden" name="accion" value="eliminar">
-                                <input type="hidden" name="productoId" value="${item.productoId}">
+                                <input type="hidden" name="claveLinea" value="${item.claveLinea}">
                                 <button type="submit" class="boton peligro pequeno">&#128465;</button>
                             </form>
                         </div>

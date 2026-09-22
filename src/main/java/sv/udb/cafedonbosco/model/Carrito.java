@@ -9,46 +9,42 @@ import java.util.Map;
  * Carrito de compras del consumidor. Se guarda como atributo de
  * HttpSession (ver Constantes.SESSION_CARRITO), por lo que implementa
  * Serializable.
+ *
+ * Cada linea se identifica por CarritoItem.getClaveLinea() (producto +
+ * personalizacion exacta), NO solo por productoId: el mismo producto con
+ * dos personalizaciones distintas vive en dos lineas separadas, y solo se
+ * agrupan cantidades cuando la personalizacion es exactamente la misma.
  */
 public class Carrito implements Serializable {
 
-    private final Map<Integer, CarritoItem> items = new LinkedHashMap<>();
+    private final Map<String, CarritoItem> items = new LinkedHashMap<>();
 
     public void agregarProducto(CarritoItem nuevo) {
-        CarritoItem existente = items.get(nuevo.getProductoId());
+        String claveLinea = nuevo.getClaveLinea();
+        CarritoItem existente = items.get(claveLinea);
         if (existente != null) {
             existente.setCantidad(existente.getCantidad() + nuevo.getCantidad());
-            // El carrito solo guarda una linea por producto: si el cliente
-            // vuelve a agregar el mismo producto con una personalizacion
-            // distinta (desde la ficha del producto), la nueva reemplaza a
-            // la anterior para toda la linea (no se separan en dos lineas
-            // independientes). Pero un simple "+1" sin opciones (boton del
-            // carrito, tarjeta del catalogo, vista rapida) no debe borrar
-            // la personalizacion que la linea ya tenia.
-            if (nuevo.getOpciones() != null && !nuevo.getOpciones().isEmpty()) {
-                existente.setOpciones(nuevo.getOpciones());
-            }
         } else {
-            items.put(nuevo.getProductoId(), nuevo);
+            items.put(claveLinea, nuevo);
         }
     }
 
-    public void actualizarCantidad(Integer productoId, Integer cantidad) {
-        CarritoItem item = items.get(productoId);
+    public void actualizarCantidad(String claveLinea, Integer cantidad) {
+        CarritoItem item = items.get(claveLinea);
         if (item != null) {
             item.setCantidad(cantidad);
         }
     }
 
-    public void eliminarProducto(Integer productoId) {
-        items.remove(productoId);
+    public void eliminarProducto(String claveLinea) {
+        items.remove(claveLinea);
     }
 
     public void vaciar() {
         items.clear();
     }
 
-    public Map<Integer, CarritoItem> getItems() {
+    public Map<String, CarritoItem> getItems() {
         return items;
     }
 

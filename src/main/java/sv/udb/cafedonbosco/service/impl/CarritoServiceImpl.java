@@ -18,7 +18,9 @@ import sv.udb.cafedonbosco.util.ValidacionUtil;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CarritoServiceImpl implements CarritoService {
 
@@ -53,32 +55,54 @@ public class CarritoServiceImpl implements CarritoService {
         if (!ValidacionUtil.esCantidadValida(cantidad)) {
             throw new ValidacionException("La cantidad debe ser mayor a 0.");
         }
-        CarritoItem existente = carrito.getItems().get(productoId);
-        int cantidadTotalDeseada = (existente != null ? existente.getCantidad() : 0) + cantidad;
-        Producto producto = validarProductoDisponible(productoId, cantidadTotalDeseada);
         // Solo se consulta PersonalizacionService cuando el cliente realmente
         // envio opciones: asi un carrito sin personalizacion (todo el flujo
         // JSP existente) no depende de esa capa para nada.
         List<OpcionSeleccionada> opciones = (opcionIds != null && !opcionIds.isEmpty())
                 ? personalizacionService.validarYResolverOpciones(productoId, opcionIds)
                 : new ArrayList<>();
+
+        // El stock se valida contra el total pedido del PRODUCTO (sumando
+        // todas sus lineas, sin importar la personalizacion de cada una),
+        // no solo contra la linea que se esta tocando: dos personalizaciones
+        // distintas del mismo producto comparten el mismo stock fisico.
+        CarritoItem nuevoTentativo = new CarritoItem(productoId, null, BigDecimal.ZERO, cantidad, null, opciones);
+        String claveLinea = nuevoTentativo.getClaveLinea();
+        int cantidadEnOtrasLineas = sumarCantidadDelProductoEnOtrasLineas(carrito, productoId, claveLinea);
+        CarritoItem existente = carrito.getItems().get(claveLinea);
+        int cantidadTotalDeseada = cantidadEnOtrasLineas + (existente != null ? existente.getCantidad() : 0) + cantidad;
+        Producto producto = validarProductoDisponible(productoId, cantidadTotalDeseada);
+
         carrito.agregarProducto(new CarritoItem(
                 producto.getId(), producto.getNombre(), producto.getPrecio(), cantidad, producto.getImagen(), opciones
         ));
     }
 
     @Override
-    public void actualizarCantidad(Carrito carrito, int productoId, int cantidad) {
-        if (!carrito.getItems().containsKey(productoId)) {
+    public void actualizarCantidad(Carrito carrito, String claveLinea, int cantidad) {
+        CarritoItem item = carrito.getItems().get(claveLinea);
+        if (item == null) {
             throw new RecursoNoEncontradoException("El producto no esta en el carrito.");
         }
-        validarProductoDisponible(productoId, cantidad);
-        carrito.actualizarCantidad(productoId, cantidad);
+        int cantidadEnOtrasLineas = sumarCantidadDelProductoEnOtrasLineas(carrito, item.getProductoId(), claveLinea);
+        validarProductoDisponible(item.getProductoId(), cantidadEnOtrasLineas + cantidad);
+        carrito.actualizarCantidad(claveLinea, cantidad);
     }
 
     @Override
-    public void eliminarProducto(Carrito carrito, int productoId) {
-        carrito.eliminarProducto(productoId);
+    public void eliminarProducto(Carrito carrito, String claveLinea) {
+        carrito.eliminarProducto(claveLinea);
+    }
+
+    /** Suma la cantidad de todas las lineas del mismo producto, EXCLUYENDO la linea indicada (para no contarla dos veces al validar su propio cambio). */
+    private int sumarCantidadDelProductoEnOtrasLineas(Carrito carrito, int productoId, String claveLineaExcluida) {
+        int total = 0;
+        for (CarritoItem item : carrito.getItems().values()) {
+            if (item.getProductoId() == productoId && !item.getClaveLinea().equals(claveLineaExcluida)) {
+                total += item.getCantidad();
+            }
+        }
+        return total;
     }
 
     @Override
@@ -108,29 +132,41 @@ public class CarritoServiceImpl implements CarritoService {
      * disponible se recorta. El checkout siempre vuelve a validar todo
      * esto dentro de su propia transaccion, pero esto evita que el
      * cliente vea un total distinto al que realmente se le cobrara.
+     *
+     * El stock disponible es por PRODUCTO, no por linea: si el mismo
+     * producto tiene varias lineas (personalizaciones distintas), el
+     * recorte reparte el stock disponible entre ellas en el orden en que
+     * aparecen en el carrito, en vez de dejar que cada linea se recorte
+     * de forma independiente contra el stock total (lo que podria sumar
+     * mas unidades de las realmente disponibles).
      */
     private void resincronizarCarrito(Carrito carrito) {
-        List<Integer> aEliminar = new ArrayList<>();
+        List<String> aEliminar = new ArrayList<>();
+        Map<Integer, Integer> disponiblePorProducto = new HashMap<>();
         for (CarritoItem item : carrito.getItems().values()) {
             Producto producto = productoDAO.buscarPorId(item.getProductoId());
             if (producto == null || !Boolean.TRUE.equals(producto.getActivo())) {
-                aEliminar.add(item.getProductoId());
+                aEliminar.add(item.getClaveLinea());
                 continue;
             }
             item.setNombreProducto(producto.getNombre());
             item.setPrecioUnitario(producto.getPrecio());
             item.setImagen(producto.getImagen());
 
-            Inventario inventario = inventarioDAO.buscarPorProducto(item.getProductoId());
-            int disponible = inventario != null ? inventario.getCantidad() : 0;
+            int disponible = disponiblePorProducto.computeIfAbsent(item.getProductoId(), id -> {
+                Inventario inventario = inventarioDAO.buscarPorProducto(id);
+                return inventario != null ? inventario.getCantidad() : 0;
+            });
             if (disponible <= 0) {
-                aEliminar.add(item.getProductoId());
-            } else if (item.getCantidad() > disponible) {
-                item.setCantidad(disponible);
+                aEliminar.add(item.getClaveLinea());
+            } else {
+                int cantidadAjustada = Math.min(item.getCantidad(), disponible);
+                item.setCantidad(cantidadAjustada);
+                disponiblePorProducto.put(item.getProductoId(), disponible - cantidadAjustada);
             }
         }
-        for (Integer productoId : aEliminar) {
-            carrito.eliminarProducto(productoId);
+        for (String claveLinea : aEliminar) {
+            carrito.eliminarProducto(claveLinea);
         }
     }
 

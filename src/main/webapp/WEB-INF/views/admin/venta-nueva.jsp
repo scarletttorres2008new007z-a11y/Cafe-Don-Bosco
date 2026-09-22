@@ -106,7 +106,7 @@
                                     <div class="qty">
                                         <form method="post" action="${pageContext.request.contextPath}/admin/venta-nueva">
                                             <input type="hidden" name="accion" value="decrementar">
-                                            <input type="hidden" name="productoId" value="${item.productoId}">
+                                            <input type="hidden" name="claveLinea" value="${item.claveLinea}">
                                             <button type="submit">-</button>
                                         </form>
                                         <span>${item.cantidad}</span>
@@ -119,7 +119,7 @@
                                     <div class="line-total">$${item.subtotalFormateado}</div>
                                     <form method="post" action="${pageContext.request.contextPath}/admin/venta-nueva">
                                         <input type="hidden" name="accion" value="eliminar">
-                                        <input type="hidden" name="productoId" value="${item.productoId}">
+                                        <input type="hidden" name="claveLinea" value="${item.claveLinea}">
                                         <button type="submit" class="remove" aria-label="Quitar">&times;</button>
                                     </form>
                                 </div>
