@@ -769,6 +769,15 @@
     font-weight: bold;
 }
 
+.opcion-radio-texto {
+    flex: 1;
+}
+
+.opcion-radio-icono {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
 /* Confirmacion */
 .confirmacion-caja {
     max-width: 560px;

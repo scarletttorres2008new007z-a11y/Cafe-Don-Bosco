@@ -87,6 +87,8 @@
         var paso2 = document.getElementById('pasoCheckout2');
         var botonSiguiente = document.getElementById('botonSiguientePaso');
         var botonVolver = document.getElementById('botonVolverPaso');
+        var indicador1 = document.getElementById('indicadorPaso1');
+        var indicador2 = document.getElementById('indicadorPaso2');
         if (!paso1 || !paso2 || !botonSiguiente) {
             return;
         }
@@ -98,6 +100,8 @@
             paso1.classList.remove('activo');
             paso1.classList.add('completado');
             paso2.classList.add('activo');
+            if (indicador1) { indicador1.classList.remove('activo'); }
+            if (indicador2) { indicador2.classList.add('activo'); }
             paso2.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });
 
@@ -106,6 +110,8 @@
                 paso2.classList.remove('activo');
                 paso1.classList.remove('completado');
                 paso1.classList.add('activo');
+                if (indicador2) { indicador2.classList.remove('activo'); }
+                if (indicador1) { indicador1.classList.add('activo'); }
             });
         }
     }

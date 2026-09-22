@@ -21,6 +21,21 @@
     <h2>Finalizar compra</h2>
     <p>Completa tus datos para procesar tu pedido.</p>
 
+    <div class="pasos-checkout">
+        <div class="paso activo" id="indicadorPaso1">
+            <span class="numero">1</span>
+            <span>Datos de envio</span>
+        </div>
+        <div class="paso" id="indicadorPaso2">
+            <span class="numero">2</span>
+            <span>Metodo de pago</span>
+        </div>
+        <div class="paso" id="indicadorPaso3">
+            <span class="numero">3</span>
+            <span>Confirmacion</span>
+        </div>
+    </div>
+
     <c:if test="${not empty error}">
         <div class="mensaje-error">${error}</div>
     </c:if>
@@ -80,15 +95,18 @@
                         <div class="opciones-radio">
                             <label>
                                 <input type="radio" name="metodoPago" value="TARJETA" ${empty datos.metodoPago || datos.metodoPago == 'TARJETA' ? 'checked' : ''}>
-                                Tarjeta de credito / debito
+                                <span class="opcion-radio-texto">Tarjeta de credito / debito</span>
+                                <span class="opcion-radio-icono">&#128179;</span>
                             </label>
                             <label>
                                 <input type="radio" name="metodoPago" value="TRANSFERENCIA" ${datos.metodoPago == 'TRANSFERENCIA' ? 'checked' : ''}>
-                                Transferencia bancaria
+                                <span class="opcion-radio-texto">Transferencia bancaria</span>
+                                <span class="opcion-radio-icono">&#127974;</span>
                             </label>
                             <label>
                                 <input type="radio" name="metodoPago" value="CONTRA_ENTREGA" ${datos.metodoPago == 'CONTRA_ENTREGA' ? 'checked' : ''}>
-                                Pago contra entrega
+                                <span class="opcion-radio-texto">Pago contra entrega</span>
+                                <span class="opcion-radio-icono">&#128181;</span>
                             </label>
                         </div>
                         <button type="button" class="boton secundario" id="botonVolverPaso" style="margin-top:14px;">&larr; Volver a datos de envio</button>
