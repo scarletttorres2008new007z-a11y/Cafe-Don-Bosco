@@ -816,6 +816,17 @@
     color: #7a6a5c;
 }
 
+.detalle-pedido-grid .item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.detalle-pedido-grid .icono-info {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
 /* Stepper de estado del pedido */
 .order-status-stepper {
     display: flex;

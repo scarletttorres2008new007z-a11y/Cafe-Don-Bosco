@@ -31,21 +31,33 @@
                 <%@ include file="_stepper-estado.jspf" %>
 
                 <div class="detalle-pedido-grid">
-                    <div>
-                        <span class="etiqueta-info">Numero de pedido</span>
-                        #000${venta.id}
+                    <div class="item">
+                        <span class="icono-info">&#129534;</span>
+                        <div>
+                            <span class="etiqueta-info">Numero de pedido</span>
+                            #000${venta.id}
+                        </div>
                     </div>
-                    <div>
-                        <span class="etiqueta-info">Fecha</span>
-                        ${venta.fechaFormateada}
+                    <div class="item">
+                        <span class="icono-info">&#128197;</span>
+                        <div>
+                            <span class="etiqueta-info">Fecha</span>
+                            ${venta.fechaFormateada}
+                        </div>
                     </div>
-                    <div>
-                        <span class="etiqueta-info">Hora</span>
-                        ${venta.horaFormateada}
+                    <div class="item">
+                        <span class="icono-info">&#128337;</span>
+                        <div>
+                            <span class="etiqueta-info">Hora</span>
+                            ${venta.horaFormateada}
+                        </div>
                     </div>
-                    <div>
-                        <span class="etiqueta-info">Total</span>
-                        <span class="odometro">$${venta.totalFormateado}</span>
+                    <div class="item">
+                        <span class="icono-info">&#128176;</span>
+                        <div>
+                            <span class="etiqueta-info">Total</span>
+                            <span class="odometro">$${venta.totalFormateado}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -58,6 +70,11 @@
 
                 <a class="boton" href="${pageContext.request.contextPath}/tienda/ticket?token=${venta.tokenTicket}">Ver ticket</a>
                 <a class="boton secundario" href="${pageContext.request.contextPath}/tienda" style="margin-left:10px;">Volver al inicio</a>
+            </div>
+
+            <div class="cta-tienda">
+                <h2>Gracias por preferirnos</h2>
+                <p>Tu apoyo nos motiva a seguir compartiendo lo mejor del cafe.</p>
             </div>
         </c:otherwise>
     </c:choose>
