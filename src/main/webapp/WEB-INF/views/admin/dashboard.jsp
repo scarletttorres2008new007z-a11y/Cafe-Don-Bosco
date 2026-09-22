@@ -157,10 +157,10 @@
                                 <span class="ico">&#9201;</span>
                                 <span><b>Historial de ventas</b><small>Consultar ventas anteriores</small></span>
                             </a>
-                            <a href="${pageContext.request.contextPath}/logout">
+                            <button type="button" class="abrir-cerrar-sesion">
                                 <span class="ico">&#8618;</span>
                                 <span><b>Cerrar sesion</b><small>Salir del sistema</small></span>
-                            </a>
+                            </button>
                         </div>
                     </section>
 

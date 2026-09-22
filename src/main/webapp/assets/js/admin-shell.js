@@ -3,14 +3,16 @@ menu.addEventListener('click',()=>side.classList.toggle('open'));
 document.addEventListener('click',e=>{if(innerWidth<=700&&!side.contains(e.target)&&!menu.contains(e.target))side.classList.remove('open')});
 
 (function () {
-    var boton = document.getElementById('botonCerrarSesion');
+    var botones = document.querySelectorAll('#botonCerrarSesion, .abrir-cerrar-sesion');
     var modal = document.getElementById('modalCerrarSesion');
     var botonCancelar = document.getElementById('botonCancelarCerrarSesion');
     var botonConfirmar = document.getElementById('botonConfirmarCerrarSesion');
-    if (!boton || !modal || !botonConfirmar) {
+    if (!botones.length || !modal || !botonConfirmar) {
         return;
     }
-    boton.addEventListener('click', function () { modal.showModal(); });
+    botones.forEach(function (boton) {
+        boton.addEventListener('click', function () { modal.showModal(); });
+    });
     if (botonCancelar) {
         botonCancelar.addEventListener('click', function () { modal.close(); });
     }
