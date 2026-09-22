@@ -65,7 +65,13 @@
 
         var imagen = document.createElement('div');
         imagen.className = 'imagen-producto';
-        imagen.textContent = '☕';
+        if (producto.imagen) {
+            imagen.style.backgroundImage = "url('" + contextPath + producto.imagen + "')";
+            imagen.style.backgroundSize = 'cover';
+            imagen.style.backgroundPosition = 'center';
+        } else {
+            imagen.textContent = '☕';
+        }
         tarjeta.appendChild(imagen);
 
         var etiqueta = document.createElement('span');
@@ -335,6 +341,7 @@
             var disponibilidadEl = document.getElementById('qvDisponibilidad');
             var personalizacionEl = document.getElementById('qvPersonalizacion');
             var botonAgregar = document.getElementById('qvBotonAgregar');
+            var imagenEl = document.getElementById('qvImagen');
 
             nombreEl.textContent = 'Cargando...';
             descripcionEl.textContent = '';
@@ -343,6 +350,10 @@
             disponibilidadEl.textContent = '';
             personalizacionEl.textContent = '';
             botonAgregar.disabled = true;
+            if (imagenEl) {
+                imagenEl.style.backgroundImage = '';
+                imagenEl.textContent = '☕';
+            }
             dialog.showModal();
 
             Promise.all([
@@ -363,6 +374,17 @@
                     window.CafeEfectos.animarOdometro(precioEl);
                 }
                 disponibilidadEl.textContent = producto.disponible ? '🟢 Disponible' : '🔴 Agotado';
+                if (imagenEl) {
+                    if (producto.imagen) {
+                        imagenEl.style.backgroundImage = "url('" + contextPath + producto.imagen + "')";
+                        imagenEl.style.backgroundSize = 'cover';
+                        imagenEl.style.backgroundPosition = 'center';
+                        imagenEl.textContent = '';
+                    } else {
+                        imagenEl.style.backgroundImage = '';
+                        imagenEl.textContent = '☕';
+                    }
+                }
 
                 if (grupos.length) {
                     var nombres = grupos.map(function (g) { return g.nombre; }).join(', ');

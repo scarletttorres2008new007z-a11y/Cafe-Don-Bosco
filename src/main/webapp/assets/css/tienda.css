@@ -522,10 +522,27 @@
     box-shadow: var(--sombra-suave);
 }
 
+.info-secundaria .item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.info-secundaria .icono-info {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
 .info-secundaria .item span.etiqueta-info {
     display: block;
     font-size: 0.78rem;
     color: #7a6a5c;
+}
+
+.info-secundaria .valor-info {
+    display: block;
+    font-weight: 600;
+    font-size: 0.92rem;
 }
 
 /* Carrito */

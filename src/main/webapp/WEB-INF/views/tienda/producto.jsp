@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -45,11 +46,8 @@
                             </svg>
                         </div>
                     </c:when>
-                    <c:when test="${producto.nombre == 'Frappe de vainilla'}">
-                        <img class="detalle-imagen-foto" src="https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&amp;w=600&amp;auto=format&amp;fit=crop" alt="${producto.nombre}">
-                    </c:when>
-                    <c:when test="${producto.nombre == 'Croissant'}">
-                        <img class="detalle-imagen-foto" src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&amp;w=600&amp;auto=format&amp;fit=crop" alt="${producto.nombre}">
+                    <c:when test="${not empty producto.imagen}">
+                        <img class="detalle-imagen-foto" src="${pageContext.request.contextPath}${fn:escapeXml(producto.imagen)}" alt="${fn:escapeXml(producto.nombre)}">
                     </c:when>
                     <c:otherwise>
                         <div class="detalle-imagen">&#9749;</div>
@@ -97,28 +95,39 @@
                         <input type="hidden" name="accion" value="agregar">
                         <input type="hidden" name="productoId" value="${producto.id}">
                         <input type="hidden" name="volver" value="${pageContext.request.contextPath}/tienda/producto?id=${producto.id}">
+                        <label for="cantidad">Cantidad</label>
                         <div class="selector-cantidad">
-                            <label for="cantidad">Cantidad</label>
+                            <button type="button" data-cantidad-decrementar aria-label="Disminuir cantidad">&minus;</button>
                             <input type="number" id="cantidad" name="cantidad" value="1" min="1" max="20">
+                            <button type="button" data-cantidad-incrementar aria-label="Aumentar cantidad">+</button>
                         </div>
                         <button type="submit" class="boton" ${producto.disponible ? '' : 'disabled'}>&#128722; Agregar al carrito</button>
                     </form>
 
                     <div class="info-secundaria">
                         <div class="item">
-                            <span class="etiqueta-info">Disponibilidad</span>
-                            <c:choose>
-                                <c:when test="${producto.disponible}"><span class="disponible">Disponible</span></c:when>
-                                <c:otherwise><span class="no-disponible">Agotado</span></c:otherwise>
-                            </c:choose>
+                            <span class="icono-info">&#9673;</span>
+                            <div>
+                                <span class="etiqueta-info">Disponibilidad</span>
+                                <c:choose>
+                                    <c:when test="${producto.disponible}"><span class="valor-info disponible">Disponible</span></c:when>
+                                    <c:otherwise><span class="valor-info no-disponible">Agotado</span></c:otherwise>
+                                </c:choose>
+                            </div>
                         </div>
                         <div class="item">
-                            <span class="etiqueta-info">Categoria</span>
-                            ${producto.categoriaNombre}
+                            <span class="icono-info">&#9749;</span>
+                            <div>
+                                <span class="etiqueta-info">Categoria</span>
+                                <span class="valor-info">${producto.categoriaNombre}</span>
+                            </div>
                         </div>
                         <div class="item">
-                            <span class="etiqueta-info">Tiempo de preparacion</span>
-                            ${empty producto.tiempoPreparacion ? 'No especificado' : producto.tiempoPreparacion}
+                            <span class="icono-info">&#9201;</span>
+                            <div>
+                                <span class="etiqueta-info">Tiempo de preparacion</span>
+                                <span class="valor-info">${empty producto.tiempoPreparacion ? 'No especificado' : producto.tiempoPreparacion}</span>
+                            </div>
                         </div>
                     </div>
                 </div>

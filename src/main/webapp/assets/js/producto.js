@@ -79,11 +79,36 @@
         actualizarSimulador();
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        try {
-            iniciarPersonalizacion();
-        } catch (error) {
-            console.error('[producto] fallo al iniciar personalizacion', error);
+    function iniciarSelectorCantidad() {
+        var input = document.getElementById('cantidad');
+        var botonMenos = document.querySelector('[data-cantidad-decrementar]');
+        var botonMas = document.querySelector('[data-cantidad-incrementar]');
+        if (!input || !botonMenos || !botonMas) {
+            return;
         }
+        var minimo = parseInt(input.min, 10) || 1;
+        var maximo = parseInt(input.max, 10) || 20;
+
+        function ajustar(delta) {
+            var valor = parseInt(input.value, 10);
+            if (isNaN(valor)) {
+                valor = minimo;
+            }
+            valor = Math.min(maximo, Math.max(minimo, valor + delta));
+            input.value = valor;
+        }
+
+        botonMenos.addEventListener('click', function () { ajustar(-1); });
+        botonMas.addEventListener('click', function () { ajustar(1); });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        [iniciarPersonalizacion, iniciarSelectorCantidad].forEach(function (modulo) {
+            try {
+                modulo();
+            } catch (error) {
+                console.error('[producto] fallo al iniciar ' + modulo.name, error);
+            }
+        });
     });
 })();

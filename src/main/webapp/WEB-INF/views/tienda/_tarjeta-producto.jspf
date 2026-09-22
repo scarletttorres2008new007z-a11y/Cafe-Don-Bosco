@@ -1,6 +1,13 @@
 <div class="tarjeta-producto">
     <button type="button" class="boton-vista-rapida" data-producto-id="${producto.id}" title="Vista rapida" aria-label="Vista rapida de ${producto.nombre}">&#128065;</button>
-    <div class="imagen-producto">&#9749;</div>
+    <c:choose>
+        <c:when test="${not empty producto.imagen}">
+            <div class="imagen-producto" style="background-image:url('${pageContext.request.contextPath}${fn:escapeXml(producto.imagen)}');background-size:cover;background-position:center;"></div>
+        </c:when>
+        <c:otherwise>
+            <div class="imagen-producto">&#9749;</div>
+        </c:otherwise>
+    </c:choose>
     <span class="etiqueta">${producto.categoriaNombre}</span>
     <h3>${producto.nombre}</h3>
     <p class="ayuda">${producto.descripcion}</p>
