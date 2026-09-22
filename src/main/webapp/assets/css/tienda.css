@@ -570,10 +570,24 @@
     border-radius: var(--radio-sm);
 }
 
+.pos-producto {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--color-borde);
+}
+
+.pos-producto:last-of-type {
+    border-bottom: none;
+}
+
 .fila-carrito-item {
     display: flex;
     align-items: center;
     gap: 14px;
+    min-width: 0;
 }
 
 .fila-carrito-item .imagen-producto {
@@ -975,6 +989,15 @@
     .layout-carrito,
     .layout-checkout {
         grid-template-columns: 1fr;
+    }
+
+    .pos-producto {
+        grid-template-columns: 1fr auto;
+        row-gap: 10px;
+    }
+
+    .fila-carrito-item {
+        grid-column: 1 / -1;
     }
 
     .encabezado-tienda {

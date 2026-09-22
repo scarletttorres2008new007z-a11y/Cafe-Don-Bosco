@@ -89,21 +89,37 @@ public class CarritoViewServlet extends TiendaBaseServlet {
         return contexto + "/tienda/carrito";
     }
 
-    /** El form clasico envia un "opcionId" por cada pill/checkbox marcado; puede no venir ninguno. */
+    /**
+     * El form envia un "opcionId" por cada checkbox marcado (grupos de
+     * seleccion multiple) y un "opcionId_g{grupoId}" por cada grupo de
+     * seleccion unica (radio, un nombre de campo distinto por grupo para
+     * que el navegador los trate como grupos independientes). Puede no
+     * venir ninguno si el producto no tiene opciones.
+     */
     private List<Integer> parametroOpcionIds(HttpServletRequest request) {
-        String[] valores = request.getParameterValues("opcionId");
-        if (valores == null || valores.length == 0) {
-            return null;
-        }
         List<Integer> ids = new ArrayList<>();
-        for (String valor : valores) {
-            try {
-                ids.add(Integer.parseInt(valor));
-            } catch (NumberFormatException e) {
-                // Un valor no numerico no deberia llegar desde el formulario propio; se ignora.
+        String[] valoresCheckbox = request.getParameterValues("opcionId");
+        if (valoresCheckbox != null) {
+            for (String valor : valoresCheckbox) {
+                agregarSiEsNumero(ids, valor);
             }
         }
-        return ids;
+        java.util.Enumeration<String> nombresParametros = request.getParameterNames();
+        while (nombresParametros.hasMoreElements()) {
+            String nombre = nombresParametros.nextElement();
+            if (nombre.startsWith("opcionId_g")) {
+                agregarSiEsNumero(ids, request.getParameter(nombre));
+            }
+        }
+        return ids.isEmpty() ? null : ids;
+    }
+
+    private void agregarSiEsNumero(List<Integer> ids, String valor) {
+        try {
+            ids.add(Integer.parseInt(valor));
+        } catch (NumberFormatException e) {
+            // Un valor no numerico no deberia llegar desde el formulario propio; se ignora.
+        }
     }
 
     private int parametroCantidad(HttpServletRequest request, int porDefecto) {

@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -32,7 +33,12 @@
 
     <c:choose>
         <c:when test="${empty resumen.items}">
-            <p class="estado-vacio">Tu carrito esta vacio. <a href="${pageContext.request.contextPath}/tienda/menu">Ver el menu</a></p>
+            <div class="estado-vacio">
+                <div style="font-size:2.5rem;">&#128722;</div>
+                <p>Tu carrito esta vacio.</p>
+                <p class="ayuda">Agrega productos desde nuestro menu para comenzar.</p>
+                <a class="boton" href="${pageContext.request.contextPath}/tienda/menu">Ver el menu</a>
+            </div>
         </c:when>
         <c:otherwise>
             <div class="layout-carrito">
@@ -40,10 +46,22 @@
                     <c:forEach var="item" items="${resumen.items}">
                         <div class="pos-producto">
                             <div class="fila-carrito-item">
-                                <div class="imagen-producto">&#9749;</div>
+                                <c:choose>
+                                    <c:when test="${not empty item.imagen}">
+                                        <div class="imagen-producto" style="background-image:url('${pageContext.request.contextPath}${fn:escapeXml(item.imagen)}');background-size:cover;background-position:center;"></div>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <div class="imagen-producto">&#9749;</div>
+                                    </c:otherwise>
+                                </c:choose>
                                 <div>
                                     <strong>${item.nombreProducto}</strong><br>
-                                    <span class="ayuda">$${item.precioUnitarioFormateado} c/u</span>
+                                    <c:if test="${not empty item.opciones}">
+                                        <span class="ayuda">
+                                            <c:forEach var="opcion" items="${item.opciones}" varStatus="est">${opcion.nombreOpcion}<c:if test="${not est.last}">, </c:if></c:forEach>
+                                        </span><br>
+                                    </c:if>
+                                    <span class="ayuda">$${item.precioUnitarioConOpcionesFormateado} c/u</span>
                                 </div>
                             </div>
                             <div class="controles-cantidad">

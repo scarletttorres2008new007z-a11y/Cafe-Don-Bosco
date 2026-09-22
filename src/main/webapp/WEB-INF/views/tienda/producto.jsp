@@ -59,42 +59,43 @@
                     <h2>${producto.nombre}</h2>
                     <p>${producto.descripcion}</p>
 
-                    <c:if test="${not empty gruposOpcion}">
-                        <div class="personalizacion-producto">
-                            <c:forEach var="grupo" items="${gruposOpcion}">
-                                <div class="grupo-opcion">
-                                    <label class="grupo-opcion-titulo">${grupo.nombre}<c:if test="${grupo.obligatorio}"> *</c:if></label>
-                                    <div class="pill-opciones">
-                                        <c:forEach var="opcion" items="${grupo.opciones}" varStatus="est">
-                                            <label class="pill-opcion">
-                                                <c:choose>
-                                                    <c:when test="${grupo.seleccionMultiple}">
-                                                        <input type="checkbox" name="opcionId" value="${opcion.id}"
-                                                               data-grupo-nombre="${grupo.nombre}" data-opcion-nombre="${opcion.nombre}"
-                                                               data-precio-adicional="${opcion.precioAdicional}">
-                                                    </c:when>
-                                                    <c:otherwise>
-                                                        <input type="radio" name="opcionId_g${grupo.id}" value="${opcion.id}"
-                                                               data-grupo-nombre="${grupo.nombre}" data-opcion-nombre="${opcion.nombre}"
-                                                               data-precio-adicional="${opcion.precioAdicional}"
-                                                               ${est.first ? 'checked' : ''}>
-                                                    </c:otherwise>
-                                                </c:choose>
-                                                <span>${opcion.nombre}<c:if test="${opcion.precioAdicional > 0}"> (+$${opcion.precioAdicionalFormateado})</c:if></span>
-                                            </label>
-                                        </c:forEach>
-                                    </div>
-                                </div>
-                            </c:forEach>
-                        </div>
-                    </c:if>
-
-                    <div class="detalle-precio odometro" id="detallePrecio" data-precio-base="${producto.precio}">$${producto.precioFormateado}</div>
-
                     <form method="post" action="${pageContext.request.contextPath}/tienda/carrito" class="form-agregar-carrito">
                         <input type="hidden" name="accion" value="agregar">
                         <input type="hidden" name="productoId" value="${producto.id}">
                         <input type="hidden" name="volver" value="${pageContext.request.contextPath}/tienda/producto?id=${producto.id}">
+
+                        <c:if test="${not empty gruposOpcion}">
+                            <div class="personalizacion-producto">
+                                <c:forEach var="grupo" items="${gruposOpcion}">
+                                    <div class="grupo-opcion">
+                                        <label class="grupo-opcion-titulo">${grupo.nombre}<c:if test="${grupo.obligatorio}"> *</c:if></label>
+                                        <div class="pill-opciones">
+                                            <c:forEach var="opcion" items="${grupo.opciones}" varStatus="est">
+                                                <label class="pill-opcion">
+                                                    <c:choose>
+                                                        <c:when test="${grupo.seleccionMultiple}">
+                                                            <input type="checkbox" name="opcionId" value="${opcion.id}"
+                                                                   data-grupo-nombre="${grupo.nombre}" data-opcion-nombre="${opcion.nombre}"
+                                                                   data-precio-adicional="${opcion.precioAdicional}">
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <input type="radio" name="opcionId_g${grupo.id}" value="${opcion.id}"
+                                                                   data-grupo-nombre="${grupo.nombre}" data-opcion-nombre="${opcion.nombre}"
+                                                                   data-precio-adicional="${opcion.precioAdicional}"
+                                                                   ${est.first ? 'checked' : ''}>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                    <span>${opcion.nombre}<c:if test="${opcion.precioAdicional > 0}"> (+$${opcion.precioAdicionalFormateado})</c:if></span>
+                                                </label>
+                                            </c:forEach>
+                                        </div>
+                                    </div>
+                                </c:forEach>
+                            </div>
+                        </c:if>
+
+                        <div class="detalle-precio odometro" id="detallePrecio" data-precio-base="${producto.precio}">$${producto.precioFormateado}</div>
+
                         <label for="cantidad">Cantidad</label>
                         <div class="selector-cantidad">
                             <button type="button" data-cantidad-decrementar aria-label="Disminuir cantidad">&minus;</button>
