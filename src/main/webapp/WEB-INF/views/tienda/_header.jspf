@@ -7,7 +7,7 @@
         <a href="${pageContext.request.contextPath}/tienda" class="${activo == 'inicio' ? 'activo' : ''}">Inicio</a>
         <a href="${pageContext.request.contextPath}/tienda/menu" class="${activo == 'menu' ? 'activo' : ''}">Menu</a>
         <a href="${pageContext.request.contextPath}/tienda/nosotros" class="${activo == 'nosotros' ? 'activo' : ''}">Nosotros</a>
-        <a class="carrito-boton" href="${pageContext.request.contextPath}/tienda/carrito" title="Carrito">
+        <a class="carrito-boton" href="${pageContext.request.contextPath}/tienda/carrito" title="Carrito" aria-label="Carrito de compras">
             &#128722;
             <c:if test="${carritoUnidades > 0}"><span class="contador odometro">${carritoUnidades}</span></c:if>
         </a>

@@ -409,3 +409,48 @@ FROM producto p
 JOIN categoria c ON c.id = p.categoria_id AND c.nombre = 'Cafe'
 JOIN grupo_opcion g ON g.nombre IN ('Tipo de leche', 'Nivel de azucar')
 ON DUPLICATE KEY UPDATE producto_id = producto_id;
+
+-- Personalizacion adicional: tamano y extras para bebidas (Cafe + Bebidas,
+-- seleccion unica obligatoria para el tamano, multiple opcional para
+-- extras), y acompanamientos para Comida (multiple, opcional). El Pastel
+-- de chocolate (Postres) queda deliberadamente sin ningun grupo: no todos
+-- los productos necesitan personalizacion.
+INSERT INTO grupo_opcion (nombre, obligatorio, seleccion_multiple, activo) VALUES
+    ('Tamano', TRUE, FALSE, TRUE),
+    ('Extras', FALSE, TRUE, TRUE),
+    ('Acompanamientos', FALSE, TRUE, TRUE)
+ON DUPLICATE KEY UPDATE nombre = nombre;
+
+INSERT INTO opcion (grupo_id, nombre, precio_adicional, activo)
+SELECT id, 'Pequeno', 0.00, TRUE FROM grupo_opcion WHERE nombre = 'Tamano'
+UNION ALL
+SELECT id, 'Mediano', 0.50, TRUE FROM grupo_opcion WHERE nombre = 'Tamano'
+UNION ALL
+SELECT id, 'Grande', 1.00, TRUE FROM grupo_opcion WHERE nombre = 'Tamano'
+UNION ALL
+SELECT id, 'Shot adicional', 0.50, TRUE FROM grupo_opcion WHERE nombre = 'Extras'
+UNION ALL
+SELECT id, 'Canela', 0.25, TRUE FROM grupo_opcion WHERE nombre = 'Extras'
+UNION ALL
+SELECT id, 'Crema batida', 0.50, TRUE FROM grupo_opcion WHERE nombre = 'Extras'
+UNION ALL
+SELECT id, 'Mermelada', 0.25, TRUE FROM grupo_opcion WHERE nombre = 'Acompanamientos'
+UNION ALL
+SELECT id, 'Mantequilla extra', 0.15, TRUE FROM grupo_opcion WHERE nombre = 'Acompanamientos'
+UNION ALL
+SELECT id, 'Miel', 0.25, TRUE FROM grupo_opcion WHERE nombre = 'Acompanamientos'
+ON DUPLICATE KEY UPDATE nombre = nombre;
+
+INSERT INTO producto_grupo_opcion (producto_id, grupo_id)
+SELECT p.id, g.id
+FROM producto p
+JOIN categoria c ON c.id = p.categoria_id AND c.nombre IN ('Cafe', 'Bebidas')
+JOIN grupo_opcion g ON g.nombre IN ('Tamano', 'Extras')
+ON DUPLICATE KEY UPDATE producto_id = producto_id;
+
+INSERT INTO producto_grupo_opcion (producto_id, grupo_id)
+SELECT p.id, g.id
+FROM producto p
+JOIN categoria c ON c.id = p.categoria_id AND c.nombre = 'Comida'
+JOIN grupo_opcion g ON g.nombre = 'Acompanamientos'
+ON DUPLICATE KEY UPDATE producto_id = producto_id;

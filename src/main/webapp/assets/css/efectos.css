@@ -214,6 +214,21 @@
     animation: toastProgress 3s linear forwards;
 }
 
+.toast-espresso.toast-error {
+    background-color: var(--color-error);
+}
+
+.toast-espresso.toast-error .toast-barra {
+    background-color: var(--color-crema);
+}
+
+/* ---------- Confirmacion breve en el boton de agregar al carrito ---------- */
+.boton-agregado {
+    background-color: var(--color-exito) !important;
+    border-color: var(--color-exito) !important;
+    color: #fff !important;
+}
+
 @keyframes toastEntrada {
     from {
         transform: translateX(40px);

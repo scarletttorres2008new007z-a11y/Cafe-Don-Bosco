@@ -22,9 +22,21 @@ public class OpcionDAOImpl implements OpcionDAO {
         return listar("SELECT " + COLUMNAS + " FROM opcion WHERE grupo_id = ? ORDER BY nombre", grupoId);
     }
 
+    /**
+     * Se usa para renderizar la ficha de producto (donde la primera opcion
+     * de un grupo de seleccion unica queda pre-marcada por defecto) y para
+     * resolver los precios en el checkout. Se ordena por precio adicional
+     * ascendente para que ese default sea siempre la opcion mas barata del
+     * grupo, nunca una que agregue costo solo porque su nombre viene
+     * primero en el alfabeto (ej. "Leche de almendra" antes que "Leche
+     * entera"). Entre opciones con el mismo precio se desempata por id
+     * (orden de creacion), no por nombre: alfabeticamente "Extra dulce"
+     * gana a "Normal", que es justo la opcion que un cliente esperaria
+     * por defecto.
+     */
     @Override
     public List<Opcion> listarActivasPorGrupo(int grupoId) {
-        return listar("SELECT " + COLUMNAS + " FROM opcion WHERE grupo_id = ? AND activo = TRUE ORDER BY nombre", grupoId);
+        return listar("SELECT " + COLUMNAS + " FROM opcion WHERE grupo_id = ? AND activo = TRUE ORDER BY precio_adicional, id", grupoId);
     }
 
     private List<Opcion> listar(String sql, int grupoId) {

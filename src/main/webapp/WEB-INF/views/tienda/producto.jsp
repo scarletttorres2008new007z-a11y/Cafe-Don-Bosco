@@ -29,7 +29,7 @@
             <div class="detalle-layout" style="margin-top:20px;">
                 <c:choose>
                     <c:when test="${not empty gruposOpcion}">
-                        <div class="beverage-layer-container">
+                        <div class="beverage-layer-container" aria-hidden="true">
                             <svg id="coffeeSimulatorSVG" width="280" height="340" viewBox="0 0 280 340" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <ellipse cx="140" cy="310" rx="70" ry="12" fill="#2B1810" fill-opacity="0.15" />
                                 <path d="M80 60 L95 280 C96 295 110 305 140 305 C170 305 184 295 185 280 L200 60 Z"
@@ -50,7 +50,7 @@
                         <img class="detalle-imagen-foto" src="${pageContext.request.contextPath}${fn:escapeXml(producto.imagen)}" alt="${fn:escapeXml(producto.nombre)}">
                     </c:when>
                     <c:otherwise>
-                        <div class="detalle-imagen">&#9749;</div>
+                        <div class="detalle-imagen" aria-hidden="true">&#9749;</div>
                     </c:otherwise>
                 </c:choose>
 
@@ -67,8 +67,8 @@
                         <c:if test="${not empty gruposOpcion}">
                             <div class="personalizacion-producto">
                                 <c:forEach var="grupo" items="${gruposOpcion}">
-                                    <div class="grupo-opcion">
-                                        <label class="grupo-opcion-titulo">${fn:escapeXml(grupo.nombre)}<c:if test="${grupo.obligatorio}"> *</c:if></label>
+                                    <fieldset class="grupo-opcion">
+                                        <legend class="grupo-opcion-titulo">${fn:escapeXml(grupo.nombre)}<c:if test="${grupo.obligatorio}"> *</c:if></legend>
                                         <div class="pill-opciones">
                                             <c:forEach var="opcion" items="${grupo.opciones}" varStatus="est">
                                                 <label class="pill-opcion">
@@ -89,20 +89,23 @@
                                                 </label>
                                             </c:forEach>
                                         </div>
-                                    </div>
+                                    </fieldset>
                                 </c:forEach>
                             </div>
                         </c:if>
 
-                        <div class="detalle-precio odometro" id="detallePrecio" data-precio-base="${producto.precio}">$${producto.precioFormateado}</div>
+                        <div class="detalle-precio odometro" id="detallePrecio" data-precio-base="${producto.precio}" aria-live="polite">$${producto.precioFormateado}</div>
 
                         <label for="cantidad">Cantidad</label>
                         <div class="selector-cantidad">
                             <button type="button" data-cantidad-decrementar aria-label="Disminuir cantidad">&minus;</button>
-                            <input type="number" id="cantidad" name="cantidad" value="1" min="1" max="20">
+                            <input type="number" id="cantidad" name="cantidad" value="1" min="1" max="20" aria-label="Cantidad a agregar">
                             <button type="button" data-cantidad-incrementar aria-label="Aumentar cantidad">+</button>
                         </div>
                         <button type="submit" class="boton" ${producto.disponible ? '' : 'disabled'}>&#128722; Agregar al carrito</button>
+                        <c:if test="${not producto.disponible}">
+                            <p class="mensaje-error" role="alert">Este producto esta agotado en este momento.</p>
+                        </c:if>
                     </form>
 
                     <div class="info-secundaria">

@@ -102,7 +102,7 @@ public class GrupoOpcionDAOImpl implements GrupoOpcionDAO {
                 + "FROM grupo_opcion g "
                 + "JOIN producto_grupo_opcion pg ON pg.grupo_id = g.id "
                 + "WHERE pg.producto_id = ? AND g.activo = TRUE "
-                + "ORDER BY g.nombre";
+                + "ORDER BY g.obligatorio DESC, g.nombre";
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement stmt = conexion.prepareStatement(sql)) {
             stmt.setInt(1, productoId);

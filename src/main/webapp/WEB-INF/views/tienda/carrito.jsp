@@ -51,7 +51,7 @@
                                         <div class="imagen-producto" style="background-image:url('${pageContext.request.contextPath}${fn:escapeXml(item.imagen)}');background-size:cover;background-position:center;"></div>
                                     </c:when>
                                     <c:otherwise>
-                                        <div class="imagen-producto">&#9749;</div>
+                                        <div class="imagen-producto" aria-hidden="true">&#9749;</div>
                                     </c:otherwise>
                                 </c:choose>
                                 <div>
@@ -68,20 +68,20 @@
                                 <form method="post" action="${pageContext.request.contextPath}/tienda/carrito">
                                     <input type="hidden" name="accion" value="decrementar">
                                     <input type="hidden" name="claveLinea" value="${item.claveLinea}">
-                                    <button type="submit">-</button>
+                                    <button type="submit" aria-label="Disminuir cantidad de ${fn:escapeXml(item.nombreProducto)}">-</button>
                                 </form>
-                                <span>${item.cantidad}</span>
+                                <span aria-label="Cantidad: ${item.cantidad}">${item.cantidad}</span>
                                 <form method="post" action="${pageContext.request.contextPath}/tienda/carrito">
                                     <input type="hidden" name="accion" value="incrementar">
                                     <input type="hidden" name="claveLinea" value="${item.claveLinea}">
-                                    <button type="submit">+</button>
+                                    <button type="submit" aria-label="Aumentar cantidad de ${fn:escapeXml(item.nombreProducto)}">+</button>
                                 </form>
                             </div>
                             <strong>$${item.subtotalFormateado}</strong>
                             <form method="post" action="${pageContext.request.contextPath}/tienda/carrito">
                                 <input type="hidden" name="accion" value="eliminar">
                                 <input type="hidden" name="claveLinea" value="${item.claveLinea}">
-                                <button type="submit" class="boton peligro pequeno">&#128465;</button>
+                                <button type="submit" class="boton peligro pequeno" aria-label="Eliminar ${fn:escapeXml(item.nombreProducto)} del carrito">&#128465;</button>
                             </form>
                         </div>
                     </c:forEach>

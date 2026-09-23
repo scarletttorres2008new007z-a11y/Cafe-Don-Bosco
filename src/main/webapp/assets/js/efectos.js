@@ -9,6 +9,11 @@
 
     var ES_PUNTERO_TOSCO = window.matchMedia('(pointer: coarse)').matches;
 
+    function obtenerContextPath() {
+        var header = document.querySelector('.encabezado-tienda');
+        return header ? (header.dataset.contextPath || '') : '';
+    }
+
     // ---------- Parallax 3D de fondo ----------
     function iniciarParallax() {
         var elementos = document.querySelectorAll('.bg-coffee-parallax');
@@ -169,15 +174,17 @@
         if (!toastContenedor) {
             toastContenedor = document.createElement('div');
             toastContenedor.className = 'toast-contenedor';
+            toastContenedor.setAttribute('role', 'status');
+            toastContenedor.setAttribute('aria-live', 'polite');
             document.body.appendChild(toastContenedor);
         }
         return toastContenedor;
     }
 
-    function mostrarToast(mensaje) {
+    function mostrarToast(mensaje, tipo) {
         var contenedor = obtenerContenedorToast();
         var toast = document.createElement('div');
-        toast.className = 'toast-espresso';
+        toast.className = 'toast-espresso' + (tipo === 'error' ? ' toast-error' : '');
 
         var texto = document.createElement('span');
         texto.textContent = mensaje;
@@ -252,6 +259,114 @@
         (raiz || document).querySelectorAll('.odometro').forEach(animarOdometroElemento);
     }
 
+    // ---------- Agregar al carrito por AJAX (sin recargar la pagina) ----------
+    /**
+     * Lee del propio form los mismos campos que el CarritoViewServlet
+     * espera en el POST tradicional (productoId, cantidad, y las opciones
+     * de personalizacion: radios "opcionId_g{grupoId}" para grupos de
+     * seleccion unica, checkboxes "opcionId" para grupos multiples), para
+     * poder enviarlos como JSON al endpoint REST /api/carrito que ya
+     * existia pero ningun frontend consumia todavia.
+     */
+    function extraerDatosFormulario(form) {
+        var productoIdInput = form.querySelector('input[name="productoId"]');
+        var cantidadInput = form.querySelector('input[name="cantidad"]');
+        var opcionIds = [];
+        form.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked').forEach(function (input) {
+            if (input.name === 'opcionId' || input.name.indexOf('opcionId_g') === 0) {
+                var valor = parseInt(input.value, 10);
+                if (!isNaN(valor)) {
+                    opcionIds.push(valor);
+                }
+            }
+        });
+        return {
+            productoId: productoIdInput ? parseInt(productoIdInput.value, 10) : null,
+            cantidad: cantidadInput ? (parseInt(cantidadInput.value, 10) || 1) : 1,
+            opcionIds: opcionIds
+        };
+    }
+
+    /** Actualiza el contador del carrito en el encabezado con el dato real que acaba de confirmar el servidor. */
+    function actualizarBadgeCarrito(cantidadUnidades) {
+        var boton = document.querySelector('.carrito-boton');
+        if (!boton) {
+            return;
+        }
+        var badge = boton.querySelector('.contador');
+        if (cantidadUnidades > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'contador odometro';
+                boton.appendChild(badge);
+            }
+            badge.textContent = String(cantidadUnidades);
+            badge.classList.add('cart-badge-bounce');
+            badge.addEventListener('animationend', function () {
+                badge.classList.remove('cart-badge-bounce');
+            }, { once: true });
+        } else if (badge) {
+            badge.remove();
+        }
+    }
+
+    function marcarBotonComoAgregado(boton) {
+        if (!boton) {
+            return;
+        }
+        var textoOriginal = boton.textContent;
+        boton.classList.add('boton-agregado');
+        boton.textContent = '✓ Agregado';
+        setTimeout(function () {
+            boton.classList.remove('boton-agregado');
+            boton.textContent = textoOriginal;
+        }, 1400);
+    }
+
+    /**
+     * Envia el alta al carrito por fetch en vez de un POST de pagina
+     * completa. El backend vuelve a validar todo (producto, precio,
+     * opciones, stock) exactamente igual que en el flujo por formulario;
+     * esta funcion solo cambia COMO se transporta esa misma peticion. Si
+     * la red falla (no la validacion: eso responde 4xx con JSON, no
+     * lanza una excepcion de fetch) se recurre al envio real del form
+     * para no dejar al cliente sin forma de comprar.
+     */
+    function enviarAgregarCarrito(form, boton) {
+        var datos = extraerDatosFormulario(form);
+        var contextPath = obtenerContextPath();
+
+        fetch(contextPath + '/api/carrito', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(datos)
+        }).then(function (respuesta) {
+            return respuesta.json().then(function (cuerpo) {
+                return { ok: respuesta.ok, cuerpo: cuerpo };
+            });
+        }).then(function (resultado) {
+            form.dataset.volando = '';
+            if (boton) {
+                boton.disabled = false;
+            }
+            if (resultado.ok && resultado.cuerpo && resultado.cuerpo.datos) {
+                actualizarBadgeCarrito(resultado.cuerpo.datos.cantidadUnidades);
+                marcarBotonComoAgregado(boton);
+                mostrarToast(resultado.cuerpo.mensaje || 'Se agrego al carrito');
+            } else {
+                mostrarToast((resultado.cuerpo && resultado.cuerpo.mensaje) || 'No se pudo agregar el producto.', 'error');
+            }
+        }).catch(function (error) {
+            console.error('[efectos] fallo el alta por AJAX, se reenvia el formulario', error);
+            try {
+                sessionStorage.setItem('cdb_pulso_carrito', '1');
+            } catch (almacenamientoNoDisponible) {
+                // Sin sessionStorage (modo privado, etc.): se omite solo el pulso del badge tras recargar.
+            }
+            form.submit();
+        });
+    }
+
     // ---------- Fly-to-cart ----------
     /** Sube por los ancestros del form hasta hallar uno que contenga un icono de producto visible. */
     function buscarOrigenDeVuelo(form) {
@@ -312,19 +427,11 @@
                     });
                 });
 
-                try {
-                    sessionStorage.setItem('cdb_pulso_carrito', '1');
-                } catch (almacenamientoNoDisponible) {
-                    // Sin sessionStorage (modo privado, etc.): se omite solo el pulso del badge tras recargar.
-                }
-
-                mostrarToast('Se agrego al carrito');
-
                 setTimeout(function () {
                     if (clon.parentNode) {
                         clon.parentNode.removeChild(clon);
                     }
-                    form.submit();
+                    enviarAgregarCarrito(form, boton);
                 }, 550);
             });
         });
