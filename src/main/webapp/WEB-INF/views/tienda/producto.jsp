@@ -28,6 +28,9 @@
         <c:otherwise>
             <div class="detalle-layout" style="margin-top:20px;">
                 <c:choose>
+                    <c:when test="${not empty producto.imagen}">
+                        <img class="detalle-imagen-foto" src="${pageContext.request.contextPath}${fn:escapeXml(producto.imagen)}" alt="${fn:escapeXml(producto.nombre)}">
+                    </c:when>
                     <c:when test="${not empty gruposOpcion}">
                         <div class="beverage-layer-container" aria-hidden="true">
                             <svg id="coffeeSimulatorSVG" width="280" height="340" viewBox="0 0 280 340" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -45,9 +48,6 @@
                                 <path d="M90 70 L102 270" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.5" />
                             </svg>
                         </div>
-                    </c:when>
-                    <c:when test="${not empty producto.imagen}">
-                        <img class="detalle-imagen-foto" src="${pageContext.request.contextPath}${fn:escapeXml(producto.imagen)}" alt="${fn:escapeXml(producto.nombre)}">
                     </c:when>
                     <c:otherwise>
                         <div class="detalle-imagen" aria-hidden="true">&#9749;</div>
