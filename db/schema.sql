@@ -401,14 +401,14 @@ UNION ALL
 SELECT id, 'Sin azucar', 0.00, TRUE FROM grupo_opcion WHERE nombre = 'Nivel de azucar'
 UNION ALL
 SELECT id, 'Extra dulce', 0.00, TRUE FROM grupo_opcion WHERE nombre = 'Nivel de azucar'
-ON DUPLICATE KEY UPDATE nombre = nombre;
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 INSERT INTO producto_grupo_opcion (producto_id, grupo_id)
 SELECT p.id, g.id
 FROM producto p
 JOIN categoria c ON c.id = p.categoria_id AND c.nombre = 'Cafe'
 JOIN grupo_opcion g ON g.nombre IN ('Tipo de leche', 'Nivel de azucar')
-ON DUPLICATE KEY UPDATE producto_id = producto_id;
+ON DUPLICATE KEY UPDATE producto_id = VALUES(producto_id);
 
 -- Personalizacion adicional: tamano y extras para bebidas (Cafe + Bebidas,
 -- seleccion unica obligatoria para el tamano, multiple opcional para
@@ -419,7 +419,7 @@ INSERT INTO grupo_opcion (nombre, obligatorio, seleccion_multiple, activo) VALUE
     ('Tamano', TRUE, FALSE, TRUE),
     ('Extras', FALSE, TRUE, TRUE),
     ('Acompanamientos', FALSE, TRUE, TRUE)
-ON DUPLICATE KEY UPDATE nombre = nombre;
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 INSERT INTO opcion (grupo_id, nombre, precio_adicional, activo)
 SELECT id, 'Pequeno', 0.00, TRUE FROM grupo_opcion WHERE nombre = 'Tamano'
@@ -439,18 +439,18 @@ UNION ALL
 SELECT id, 'Mantequilla extra', 0.15, TRUE FROM grupo_opcion WHERE nombre = 'Acompanamientos'
 UNION ALL
 SELECT id, 'Miel', 0.25, TRUE FROM grupo_opcion WHERE nombre = 'Acompanamientos'
-ON DUPLICATE KEY UPDATE nombre = nombre;
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 INSERT INTO producto_grupo_opcion (producto_id, grupo_id)
 SELECT p.id, g.id
 FROM producto p
 JOIN categoria c ON c.id = p.categoria_id AND c.nombre IN ('Cafe', 'Bebidas')
 JOIN grupo_opcion g ON g.nombre IN ('Tamano', 'Extras')
-ON DUPLICATE KEY UPDATE producto_id = producto_id;
+ON DUPLICATE KEY UPDATE producto_id = VALUES(producto_id);
 
 INSERT INTO producto_grupo_opcion (producto_id, grupo_id)
 SELECT p.id, g.id
 FROM producto p
 JOIN categoria c ON c.id = p.categoria_id AND c.nombre = 'Comida'
 JOIN grupo_opcion g ON g.nombre = 'Acompanamientos'
-ON DUPLICATE KEY UPDATE producto_id = producto_id;
+ON DUPLICATE KEY UPDATE producto_id = VALUES(producto_id);
