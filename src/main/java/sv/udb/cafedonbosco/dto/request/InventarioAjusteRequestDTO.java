@@ -5,8 +5,17 @@ public class InventarioAjusteRequestDTO {
     private Integer productoId;
     private Integer cantidad;
     private Integer stockMinimo;
+    private String motivo;
 
     public InventarioAjusteRequestDTO() {
+    }
+
+    public String getMotivo() {
+        return motivo;
+    }
+
+    public void setMotivo(String motivo) {
+        this.motivo = motivo;
     }
 
     public Integer getProductoId() {

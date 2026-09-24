@@ -32,8 +32,9 @@ public class CheckoutServlet extends BaseServlet {
             Carrito carrito = SessionUtil.obtenerOCrearCarrito(request);
             UsuarioResponseDTO usuario = SessionUtil.obtenerUsuarioAutenticado(request);
             Integer usuarioId = usuario != null ? usuario.getId() : null;
+            String idempotencyKey = datos != null ? datos.getIdempotencyKey() : null;
 
-            VentaResponseDTO venta = ventaService.procesarCheckoutWeb(carrito, datos, usuarioId, datos.getIdempotencyKey());
+            VentaResponseDTO venta = ventaService.procesarCheckoutWeb(carrito, datos, usuarioId, idempotencyKey);
             JsonUtil.exito(response, HttpServletResponse.SC_CREATED, "Compra procesada correctamente", venta);
         } catch (Exception e) {
             manejarError(response, e);

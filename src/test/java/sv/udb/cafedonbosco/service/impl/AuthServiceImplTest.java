@@ -152,4 +152,45 @@ class AuthServiceImplTest {
         assertThrows(ValidacionException.class, () -> authService.registrarConsumidor(datos));
         verify(usuarioDAO, never()).existeCorreo(anyString());
     }
+
+    @Test
+    void registrarConsumidorConNombreQueContieneDigitosSeRechaza() {
+        RegistroConsumidorDTO datos = new RegistroConsumidorDTO();
+        datos.setNombre("Bob123");
+        datos.setApellido("Lopez");
+        datos.setCorreo("bob@correo.com");
+        datos.setPassword(PASSWORD_PLANO);
+
+        assertThrows(ValidacionException.class, () -> authService.registrarConsumidor(datos));
+        verify(usuarioDAO, never()).existeCorreo(anyString());
+    }
+
+    @Test
+    void trasCincoContrasenasIncorrectasSeguidasElLoginQuedaBloqueadoAunqueLaClaveSeaCorrecta() {
+        when(usuarioDAO.buscarPorCorreo("ana@correo.com")).thenReturn(usuarioActivo(Rol.ADMINISTRADOR));
+
+        for (int i = 0; i < 5; i++) {
+            assertThrows(CredencialesInvalidasException.class,
+                    () -> authService.login("ana@correo.com", "clave-incorrecta", Rol.ADMINISTRADOR));
+        }
+
+        // La sexta vez, aunque la contrasena ahora si sea la correcta, el
+        // limitador ya debe bloquear el intento antes de volver a verificarla.
+        assertThrows(ValidacionException.class,
+                () -> authService.login("ana@correo.com", PASSWORD_PLANO, Rol.ADMINISTRADOR));
+    }
+
+    @Test
+    void unLoginExitosoNoQuedaBloqueadoPorIntentosFallidosDeOtroCorreo() {
+        when(usuarioDAO.buscarPorCorreo("ana@correo.com")).thenReturn(usuarioActivo(Rol.ADMINISTRADOR));
+        when(usuarioDAO.buscarPorCorreo("otro@correo.com")).thenReturn(null);
+
+        for (int i = 0; i < 5; i++) {
+            assertThrows(CredencialesInvalidasException.class,
+                    () -> authService.login("otro@correo.com", "clave-incorrecta", null));
+        }
+
+        UsuarioResponseDTO resultado = authService.login("ana@correo.com", PASSWORD_PLANO, Rol.ADMINISTRADOR);
+        assertEquals("ana@correo.com", resultado.getCorreo());
+    }
 }

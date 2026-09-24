@@ -36,9 +36,14 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class CompraServiceImpl implements CompraService {
+
+    private static final int CANTIDAD_MAXIMA_POR_LINEA = 10000;
+    private static final BigDecimal COSTO_UNITARIO_MAXIMO = new BigDecimal("99999.99");
 
     private final CompraDAO compraDAO;
     private final ProductoDAO productoDAO;
@@ -64,6 +69,12 @@ public class CompraServiceImpl implements CompraService {
         if (datos.getItems() == null || datos.getItems().isEmpty()) {
             throw new ValidacionException("La compra debe incluir al menos un producto.");
         }
+        Set<Integer> productosVistos = new HashSet<>();
+        for (CompraRequestDTO.DetalleCompraRequestDTO item : datos.getItems()) {
+            if (item.getProductoId() != null && !productosVistos.add(item.getProductoId())) {
+                throw new ValidacionException("El mismo producto aparece mas de una vez en la compra; une las cantidades en una sola linea.");
+            }
+        }
         Proveedor proveedor = proveedorDAO.buscarPorId(datos.getProveedorId());
         if (proveedor == null) {
             throw new RecursoNoEncontradoException("El proveedor indicado no existe.");
@@ -83,6 +94,12 @@ public class CompraServiceImpl implements CompraService {
                 if (item.getProductoId() == null || !ValidacionUtil.esCantidadValida(item.getCantidad())
                         || item.getCostoUnitario() == null || item.getCostoUnitario().compareTo(BigDecimal.ZERO) <= 0) {
                     throw new ValidacionException("Cada linea de la compra necesita producto, cantidad y costo validos.");
+                }
+                if (item.getCantidad() > CANTIDAD_MAXIMA_POR_LINEA) {
+                    throw new ValidacionException("La cantidad por linea no puede superar " + CANTIDAD_MAXIMA_POR_LINEA + " unidades.");
+                }
+                if (item.getCostoUnitario().compareTo(COSTO_UNITARIO_MAXIMO) > 0) {
+                    throw new ValidacionException("El costo unitario no puede superar $" + COSTO_UNITARIO_MAXIMO + ".");
                 }
                 Producto producto = productoDAO.buscarPorId(item.getProductoId());
                 if (producto == null) {

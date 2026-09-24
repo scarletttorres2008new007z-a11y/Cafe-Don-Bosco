@@ -557,6 +557,9 @@ public class VentaServiceImpl implements VentaService {
         if (datos.getMetodoPago() == null || !METODOS_PAGO_VALIDOS.contains(datos.getMetodoPago().toUpperCase())) {
             throw new ValidacionException("Selecciona un metodo de pago valido.");
         }
+        if (datos.getNotas() != null && datos.getNotas().length() > 500) {
+            throw new ValidacionException("Las notas del pedido no pueden superar los 500 caracteres.");
+        }
         datos.setTipoEntrega(datos.getTipoEntrega().toUpperCase());
         datos.setMetodoPago(datos.getMetodoPago().toUpperCase());
     }

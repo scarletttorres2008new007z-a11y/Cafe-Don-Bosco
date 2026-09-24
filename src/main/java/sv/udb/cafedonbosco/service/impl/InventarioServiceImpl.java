@@ -22,6 +22,7 @@ import sv.udb.cafedonbosco.model.Usuario;
 import sv.udb.cafedonbosco.service.InventarioService;
 import sv.udb.cafedonbosco.service.ProductoService;
 import sv.udb.cafedonbosco.util.ConexionBD;
+import sv.udb.cafedonbosco.util.ValidacionUtil;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -57,6 +58,9 @@ public class InventarioServiceImpl implements InventarioService {
         if (datos.getStockMinimo() != null && datos.getStockMinimo() < 0) {
             throw new ValidacionException("El stock minimo no puede ser negativo.");
         }
+        if (!ValidacionUtil.esTextoValido(datos.getMotivo(), 255)) {
+            throw new ValidacionException("Debes indicar el motivo del ajuste de inventario.");
+        }
 
         Connection conexion = null;
         try {
@@ -77,7 +81,7 @@ public class InventarioServiceImpl implements InventarioService {
                 movimiento.setCantidad(Math.abs(datos.getCantidad() - stockAnterior));
                 movimiento.setStockAnterior(stockAnterior);
                 movimiento.setStockNuevo(datos.getCantidad());
-                movimiento.setMotivo("Ajuste manual de inventario");
+                movimiento.setMotivo(datos.getMotivo().trim());
                 movimiento.setUsuarioId(usuarioAdminId);
                 inventarioDAO.registrarMovimiento(conexion, movimiento);
             }

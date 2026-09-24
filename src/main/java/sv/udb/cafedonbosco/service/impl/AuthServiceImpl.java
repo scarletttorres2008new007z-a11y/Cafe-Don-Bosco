@@ -12,12 +12,14 @@ import sv.udb.cafedonbosco.exception.ValidacionException;
 import sv.udb.cafedonbosco.model.Rol;
 import sv.udb.cafedonbosco.model.Usuario;
 import sv.udb.cafedonbosco.service.AuthService;
+import sv.udb.cafedonbosco.util.LoginRateLimiter;
 import sv.udb.cafedonbosco.util.PasswordUtil;
 import sv.udb.cafedonbosco.util.ValidacionUtil;
 
 public class AuthServiceImpl implements AuthService {
 
     private final UsuarioDAO usuarioDAO;
+    private final LoginRateLimiter loginRateLimiter;
 
     public AuthServiceImpl() {
         this(new UsuarioDAOImpl());
@@ -25,7 +27,12 @@ public class AuthServiceImpl implements AuthService {
 
     /** Permite inyectar un UsuarioDAO de prueba (Mockito) sin tocar una base de datos real. */
     public AuthServiceImpl(UsuarioDAO usuarioDAO) {
+        this(usuarioDAO, new LoginRateLimiter());
+    }
+
+    public AuthServiceImpl(UsuarioDAO usuarioDAO, LoginRateLimiter loginRateLimiter) {
         this.usuarioDAO = usuarioDAO;
+        this.loginRateLimiter = loginRateLimiter;
     }
 
     @Override
@@ -33,30 +40,36 @@ public class AuthServiceImpl implements AuthService {
         if (!ValidacionUtil.esCorreoValido(correo) || !ValidacionUtil.esTextoValido(password)) {
             throw new CredencialesInvalidasException();
         }
+        if (loginRateLimiter.estaBloqueado(correo)) {
+            throw new ValidacionException("Demasiados intentos fallidos. Intenta de nuevo en unos minutos.");
+        }
 
         Usuario usuario = usuarioDAO.buscarPorCorreo(correo);
         if (usuario == null || !Boolean.TRUE.equals(usuario.getActivo())) {
+            loginRateLimiter.registrarFallo(correo);
             throw new CredencialesInvalidasException();
         }
         if (!PasswordUtil.verificar(password, usuario.getPassword())) {
+            loginRateLimiter.registrarFallo(correo);
             throw new CredencialesInvalidasException();
         }
         if (rolEsperado != null && usuario.getRol() != rolEsperado) {
+            loginRateLimiter.registrarFallo(correo);
             throw new CredencialesInvalidasException();
         }
 
+        loginRateLimiter.registrarExito(correo);
         return aDTO(usuario);
     }
 
     @Override
     public UsuarioResponseDTO registrarConsumidor(RegistroConsumidorDTO datos) {
         if (datos == null
-                || !ValidacionUtil.esTextoValido(datos.getNombre(), 80)
-                || !ValidacionUtil.esTextoValido(datos.getApellido(), 80)
+                || !ValidacionUtil.esNombreValido(datos.getNombre())
+                || !ValidacionUtil.esNombreValido(datos.getApellido())
                 || !ValidacionUtil.esCorreoValido(datos.getCorreo())
-                || !ValidacionUtil.esTextoValido(datos.getPassword())
-                || datos.getPassword().length() < 6) {
-            throw new ValidacionException("Revisa los datos del registro: nombre, apellido, correo y contrasena (minimo 6 caracteres).");
+                || !ValidacionUtil.esPasswordValida(datos.getPassword())) {
+            throw new ValidacionException("Revisa los datos del registro: nombre y apellido (solo letras y espacios), correo valido y contrasena de 6 a 72 caracteres.");
         }
         if (usuarioDAO.existeCorreo(datos.getCorreo())) {
             throw new RecursoDuplicadoException("Ya existe una cuenta registrada con ese correo.");
@@ -85,10 +98,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public UsuarioResponseDTO actualizarPerfil(int usuarioId, ActualizarPerfilRequestDTO datos) {
         if (datos == null
-                || !ValidacionUtil.esTextoValido(datos.getNombre(), 80)
-                || !ValidacionUtil.esTextoValido(datos.getApellido(), 80)
+                || !ValidacionUtil.esNombreValido(datos.getNombre())
+                || !ValidacionUtil.esNombreValido(datos.getApellido())
                 || !ValidacionUtil.esCorreoValido(datos.getCorreo())) {
-            throw new ValidacionException("Revisa los datos del perfil: nombre, apellido y correo son obligatorios.");
+            throw new ValidacionException("Revisa los datos del perfil: nombre y apellido (solo letras y espacios) y correo valido son obligatorios.");
         }
         Usuario usuario = usuarioDAO.buscarPorId(usuarioId);
         if (usuario == null) {

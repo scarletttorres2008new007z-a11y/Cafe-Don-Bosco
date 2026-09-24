@@ -3,11 +3,13 @@ package sv.udb.cafedonbosco.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import sv.udb.cafedonbosco.dto.response.ApiResponse;
+import sv.udb.cafedonbosco.exception.ValidacionException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -45,7 +47,11 @@ public final class JsonUtil {
         if (cuerpo.length() == 0) {
             return null;
         }
-        return GSON.fromJson(cuerpo.toString(), clase);
+        try {
+            return GSON.fromJson(cuerpo.toString(), clase);
+        } catch (JsonParseException e) {
+            throw new ValidacionException("El cuerpo de la solicitud no es un JSON valido.");
+        }
     }
 
     public static void escribirJson(HttpServletResponse response, int codigoHttp, Object datos) throws IOException {

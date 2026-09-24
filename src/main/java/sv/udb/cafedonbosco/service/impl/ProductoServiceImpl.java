@@ -242,6 +242,8 @@ public class ProductoServiceImpl implements ProductoService {
         }
     }
 
+    private static final BigDecimal PRECIO_MAXIMO = new BigDecimal("9999.99");
+
     private void validar(ProductoRequestDTO datos) {
         if (datos == null
                 || datos.getCategoriaId() == null
@@ -249,6 +251,9 @@ public class ProductoServiceImpl implements ProductoService {
                 || datos.getPrecio() == null
                 || datos.getPrecio().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ValidacionException("Nombre, categoria y precio (mayor a cero) son obligatorios.");
+        }
+        if (datos.getPrecio().compareTo(PRECIO_MAXIMO) > 0) {
+            throw new ValidacionException("El precio no puede ser mayor a $" + PRECIO_MAXIMO + ".");
         }
         if (datos.getStockInicial() != null && datos.getStockInicial() < 0) {
             throw new ValidacionException("El stock inicial no puede ser negativo.");

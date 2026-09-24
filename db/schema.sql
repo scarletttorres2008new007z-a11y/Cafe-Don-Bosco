@@ -60,7 +60,8 @@ CREATE TABLE IF NOT EXISTS producto (
     creado_en                   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_producto_categoria
         FOREIGN KEY (categoria_id) REFERENCES categoria(id),
-    CONSTRAINT uk_producto_categoria_nombre UNIQUE (categoria_id, nombre)
+    CONSTRAINT uk_producto_categoria_nombre UNIQUE (categoria_id, nombre),
+    CONSTRAINT chk_producto_precio CHECK (precio > 0)
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
@@ -115,7 +116,10 @@ CREATE TABLE IF NOT EXISTS venta (
     fecha_entregado              TIMESTAMP NULL,
     actualizado_en               TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_venta_usuario
-        FOREIGN KEY (usuario_id) REFERENCES usuario(id)
+        FOREIGN KEY (usuario_id) REFERENCES usuario(id),
+    CONSTRAINT chk_venta_subtotal CHECK (subtotal >= 0),
+    CONSTRAINT chk_venta_envio CHECK (envio >= 0),
+    CONSTRAINT chk_venta_total CHECK (total >= 0)
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_venta_usuario_id ON venta(usuario_id);
@@ -139,7 +143,9 @@ CREATE TABLE IF NOT EXISTS detalle_venta (
         FOREIGN KEY (venta_id) REFERENCES venta(id) ON DELETE CASCADE,
     CONSTRAINT fk_detalleventa_producto
         FOREIGN KEY (producto_id) REFERENCES producto(id),
-    CONSTRAINT chk_detalleventa_cantidad CHECK (cantidad > 0)
+    CONSTRAINT chk_detalleventa_cantidad CHECK (cantidad > 0),
+    CONSTRAINT chk_detalleventa_precio CHECK (precio_unitario >= 0),
+    CONSTRAINT chk_detalleventa_subtotal CHECK (subtotal >= 0)
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_detalleventa_venta_id ON detalle_venta(venta_id);
@@ -173,7 +179,8 @@ CREATE TABLE IF NOT EXISTS compra (
     CONSTRAINT fk_compra_proveedor
         FOREIGN KEY (proveedor_id) REFERENCES proveedor(id),
     CONSTRAINT fk_compra_usuario
-        FOREIGN KEY (usuario_id) REFERENCES usuario(id)
+        FOREIGN KEY (usuario_id) REFERENCES usuario(id),
+    CONSTRAINT chk_compra_total CHECK (total >= 0)
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
@@ -318,7 +325,8 @@ CREATE TABLE IF NOT EXISTS detalle_venta_opcion (
     CONSTRAINT fk_detalleventaopcion_detalle
         FOREIGN KEY (detalle_venta_id) REFERENCES detalle_venta(id) ON DELETE CASCADE,
     CONSTRAINT fk_detalleventaopcion_opcion
-        FOREIGN KEY (opcion_id) REFERENCES opcion(id) ON DELETE SET NULL
+        FOREIGN KEY (opcion_id) REFERENCES opcion(id) ON DELETE SET NULL,
+    CONSTRAINT chk_detalleventaopcion_precio CHECK (precio_aplicado >= 0)
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_detalleventaopcion_detalle_id ON detalle_venta_opcion(detalle_venta_id);

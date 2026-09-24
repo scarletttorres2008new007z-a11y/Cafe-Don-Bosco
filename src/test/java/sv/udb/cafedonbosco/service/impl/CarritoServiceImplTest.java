@@ -275,6 +275,32 @@ class CarritoServiceImplTest {
     }
 
     @Test
+    void actualizarCantidadRechazaCeroYNegativosAunqueOtrasLineasCubranLaSuma() {
+        when(productoDAO.buscarPorId(1)).thenReturn(productoActivo(1, "Cafe Latte", "2.50"));
+        when(inventarioDAO.buscarPorProducto(1)).thenReturn(inventarioConStock(1, 10));
+
+        Carrito carrito = new Carrito();
+        carritoService.agregarProducto(carrito, 1, 5);
+
+        // Sin este chequeo explicito, 0 o un negativo podrian colarse porque
+        // la suma con otras lineas del mismo producto seguiria siendo valida.
+        assertThrows(ValidacionException.class, () -> carritoService.actualizarCantidad(carrito, "1|", 0));
+        assertThrows(ValidacionException.class, () -> carritoService.actualizarCantidad(carrito, "1|", -2));
+        assertEquals(5, carrito.getItems().get("1|").getCantidad());
+    }
+
+    @Test
+    void actualizarCantidadRechazaMasDeVeinteUnidadesEnUnaSolaLinea() {
+        when(productoDAO.buscarPorId(1)).thenReturn(productoActivo(1, "Cafe Latte", "2.50"));
+        when(inventarioDAO.buscarPorProducto(1)).thenReturn(inventarioConStock(1, 50));
+
+        Carrito carrito = new Carrito();
+        carritoService.agregarProducto(carrito, 1, 1);
+
+        assertThrows(ValidacionException.class, () -> carritoService.actualizarCantidad(carrito, "1|", 21));
+    }
+
+    @Test
     void eliminarUnaLineaNoAfectaOtrasLineasDelMismoProducto() {
         when(productoDAO.buscarPorId(1)).thenReturn(productoActivo(1, "Cafe Latte", "2.50"));
         when(inventarioDAO.buscarPorProducto(1)).thenReturn(inventarioConStock(1, 10));

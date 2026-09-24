@@ -80,6 +80,9 @@ public class CarritoServiceImpl implements CarritoService {
 
     @Override
     public void actualizarCantidad(Carrito carrito, String claveLinea, int cantidad) {
+        if (!ValidacionUtil.esCantidadValida(cantidad) || cantidad > CANTIDAD_MAXIMA_POR_PRODUCTO) {
+            throw new ValidacionException("La cantidad debe estar entre 1 y " + CANTIDAD_MAXIMA_POR_PRODUCTO + ".");
+        }
         CarritoItem item = carrito.getItems().get(claveLinea);
         if (item == null) {
             throw new RecursoNoEncontradoException("El producto no esta en el carrito.");

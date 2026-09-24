@@ -14,6 +14,18 @@ public final class ValidacionUtil {
     private static final Pattern PATRON_TELEFONO =
             Pattern.compile("^[+]?[0-9\\s-]{7,20}$");
 
+    // Letras (con tildes y enie), espacios, apostrofe y guion, para nombres
+    // compuestos (ej. "Jose Maria", "O'Brien", "Perez-Lopez"); nunca digitos
+    // ni simbolos.
+    private static final Pattern PATRON_NOMBRE =
+            Pattern.compile("^[\\p{L}][\\p{L}\\s'-]{0,79}$");
+
+    // jBCrypt trunca (o falla, segun la version) la contrasena en 72 bytes:
+    // sin este limite dos contrasenas distintas mas alla de ese punto
+    // podrian terminar generando el mismo hash.
+    private static final int PASSWORD_LONGITUD_MINIMA = 6;
+    private static final int PASSWORD_LONGITUD_MAXIMA = 72;
+
     private ValidacionUtil() {
     }
 
@@ -35,5 +47,15 @@ public final class ValidacionUtil {
 
     public static boolean esCantidadValida(Integer cantidad) {
         return cantidad != null && cantidad > 0;
+    }
+
+    public static boolean esNombreValido(String nombre) {
+        return esTextoValido(nombre) && PATRON_NOMBRE.matcher(nombre.trim()).matches();
+    }
+
+    public static boolean esPasswordValida(String password) {
+        return password != null
+                && password.length() >= PASSWORD_LONGITUD_MINIMA
+                && password.length() <= PASSWORD_LONGITUD_MAXIMA;
     }
 }
