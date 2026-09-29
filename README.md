@@ -1,63 +1,74 @@
 # Cafe Don Bosco
 
-Sistema web completo para una cafeteria: tienda para el consumidor (catalogo,
-personalizacion de productos, carrito, checkout, ticket) y panel para el
-administrador (dashboard, productos, inventario, ventas, compras a
-proveedores), sobre una unica base de datos MySQL. Backend en Java puro
-(Jakarta EE 10: Servlets + JSP + JDBC), sin frameworks tipo Spring.
+Cafe Don Bosco es un sistema web para el manejo completo de una
+cafeteria: por un lado esta la tienda, donde cualquier cliente puede
+entrar sin crear cuenta, ver el menu, personalizar su pedido (tamano,
+tipo de leche, extras, etc.), agregarlo al carrito y pagarlo; por otro
+lado esta el panel del administrador, donde se controla el catalogo,
+el inventario, las ventas del mostrador y el historial completo del
+negocio. Ambos lados comparten la misma base de datos y las mismas
+reglas de negocio, para que el stock y las ventas siempre cuadren sin
+importar si la venta se hizo en linea o en el mostrador.
 
-## Stack y requisitos
+El proyecto esta hecho en Java puro con Jakarta EE (Servlets + JSP +
+JDBC), sin frameworks como Spring. La idea de usar Servlets y JSP
+"a mano" en vez de un framework fue justamente entender bien como
+funciona el patron MVC por dentro: quien recibe la peticion HTTP, quien
+decide la logica de negocio, quien habla con la base de datos y quien
+arma finalmente el HTML que ve el usuario, sin que un framework lo
+resuelva por debajo.
 
-- **Java 17+**
-- **Maven 3.9+**
-- **MySQL 8+** (o MariaDB, con la salvedad de la seccion de XAMPP mas abajo)
-- **Apache Tomcat 10.1+** (Jakarta EE 10 / Servlet 6.0 — Tomcat 9 o menor
-  **no** sirve este proyecto, usan la API `javax.servlet` en vez de
-  `jakarta.servlet`)
+## Tecnologias usadas
+
+- **Java 17**
+- **Maven** para las dependencias y el empaquetado
+- **Jakarta EE 10** (Servlets 6.0, JSP, JSTL)
+- **MySQL 8** como base de datos
+- **Apache Tomcat 10.1** como servidor de aplicaciones
+- Librerias puntuales para tareas especificas: **jBCrypt** (cifrado de
+  contrasenas), **Gson** (JSON), **Apache PDFBox** (generar el PDF del
+  ticket), **Jakarta Mail** (enviar el ticket por correo), **JUnit 5 +
+  Mockito** (pruebas)
 
 ---
 
-## Como ejecutar el proyecto desde cero
+## Como ejecutar el proyecto
 
-Esta seccion asume que nunca has corrido el proyecto en tu maquina. Cubre
-las dos piezas que hacen falta ademas del codigo: la base de datos (via
-XAMPP) y el servidor de aplicaciones (via el plugin Smart Tomcat de
-IntelliJ IDEA).
+Para correr este proyecto en una computadora nueva hacen falta dos
+cosas ademas del codigo: una base de datos MySQL corriendo, y un
+servidor Tomcat donde desplegar la aplicacion. Aqui explico como lo
+hice yo, usando XAMPP para la base de datos y el plugin Smart Tomcat de
+IntelliJ para no tener que compilar y desplegar a mano cada vez que
+cambio algo.
 
-### 1. Base de datos con XAMPP
+### Paso 1: levantar la base de datos con XAMPP
 
-XAMPP es un paquete que trae Apache, MySQL (o MariaDB), PHP y phpMyAdmin
-ya instalados y listos para usar. De todo eso, este proyecto **solo
-necesita el servicio de MySQL** (Apache/PHP de XAMPP no se usan; la
-aplicacion Java la sirve Tomcat, no XAMPP).
+XAMPP es un instalador que trae Apache, MySQL, PHP y phpMyAdmin ya
+configurados juntos. De todo eso yo solo uso **MySQL** (para guardar
+los datos) y **phpMyAdmin** (para administrar la base desde el
+navegador, en vez de usar la consola). Apache y PHP no participan en
+este proyecto porque quien sirve las paginas es Tomcat, no XAMPP.
 
-1. Instala XAMPP (https://www.apachefriends.org) si no lo tienes.
-2. Abre el **Panel de control de XAMPP** e inicia el modulo **MySQL**
-   (el boton "Start" a la par de MySQL). No hace falta iniciar Apache
-   para este proyecto.
-3. Abre **phpMyAdmin** (boton "Admin" junto a MySQL, o
-   `http://localhost/phpmyadmin`).
-4. Importa el esquema:
-   - Pestana **Import** → selecciona el archivo `db/schema.sql` de este
-     repositorio → **Go**.
-   - O, si prefieres la pestana **SQL**, abre `db/schema.sql` con un
-     editor de texto, copia todo su contenido, pegalo ahi y dale **Go**.
-5. Verifica que se haya creado la base `cafe_don_bosco` con sus tablas
-   (panel izquierdo de phpMyAdmin) y datos iniciales: categorias,
-   5 productos de ejemplo, un usuario administrador y los grupos de
-   personalizacion (Tipo de leche, Nivel de azucar, Tamano, Extras,
-   Acompanamientos).
+1. Instala XAMPP desde https://www.apachefriends.org
+2. Abre el panel de control de XAMPP y dale **Start** al modulo
+   **MySQL** (no hace falta iniciar Apache).
+3. Entra a phpMyAdmin, ya sea con el boton "Admin" del panel de XAMPP o
+   yendo directo a `http://localhost/phpmyadmin`.
+4. En la pestana **Import**, selecciona el archivo `db/schema.sql` de
+   este proyecto y dale **Go**. Ese script crea la base de datos
+   `cafe_don_bosco`, todas sus tablas y los datos con los que arranca
+   el sistema: las categorias, cinco productos de ejemplo, un usuario
+   administrador y las opciones de personalizacion (tamano, tipo de
+   leche, nivel de azucar, extras).
+5. Si todo salio bien, en el panel izquierdo de phpMyAdmin deberia
+   aparecer la base `cafe_don_bosco` con sus tablas ya llenas.
 
-El script es seguro de volver a correr si algo sale mal a medias (usa
-`CREATE TABLE IF NOT EXISTS` y `ON DUPLICATE KEY UPDATE`): no duplica
-datos ni borra lo que ya tengas.
-
-**Conexion por defecto:** el backend se conecta a
-`jdbc:mysql://localhost:3306/cafe_don_bosco` con usuario `root` y
-contrasena vacia — que es exactamente la configuracion por defecto de
-MySQL en XAMPP, asi que normalmente **no hace falta configurar nada
-mas**. Si tu MySQL tiene otro usuario/contrasena, define las variables
-de entorno (ver `.env.example`) antes de desplegar:
+Por defecto la aplicacion se conecta a
+`jdbc:mysql://localhost:3306/cafe_don_bosco` con el usuario `root` y
+sin contrasena, que es justo como viene MySQL en XAMPP por defecto. Si
+tu instalacion usa otro usuario o contrasena, se puede cambiar sin
+tocar el codigo definiendo estas variables de entorno antes de
+desplegar (revisa `.env.example` para la lista completa):
 
 ```bash
 export DB_URL="jdbc:mysql://localhost:3306/cafe_don_bosco?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
@@ -65,270 +76,266 @@ export DB_USUARIO="root"
 export DB_PASSWORD="tu_password"
 ```
 
-### 2. Servidor de aplicaciones con Smart Tomcat (IntelliJ IDEA)
+### Paso 2: desplegar con Smart Tomcat en IntelliJ
 
-**Smart Tomcat** es un plugin de IntelliJ que evita el paso manual de
-"compilar → empaquetar en WAR → copiar a la carpeta de Tomcat →
-reiniciar" cada vez que cambias algo: despliega el proyecto directo
-desde el IDE contra una instalacion de Tomcat que tu ya tienes en disco.
+En vez de compilar el proyecto, empaquetarlo en un `.war` y copiarlo a
+mano dentro de la carpeta de Tomcat cada vez que hago un cambio, uso el
+plugin **Smart Tomcat**: despliega el proyecto directo desde IntelliJ
+contra una instalacion de Tomcat que ya tengo en el disco, y lo vuelve
+a desplegar solo cuando reinicio la ejecucion.
 
-1. **Descarga Tomcat 10.1+** (no lo trae XAMPP ni Smart Tomcat): baja el
-   ZIP desde https://tomcat.apache.org/download-10.cgi y descomprimelo
-   en cualquier carpeta, por ejemplo `C:\tomcat10` o `~/tomcat10`.
-2. **Instala el plugin**: en IntelliJ, `File > Settings > Plugins >
-   Marketplace`, busca **Smart Tomcat**, instalalo y reinicia el IDE.
-3. **Abre este proyecto** en IntelliJ (`File > Open`, selecciona la
-   carpeta `Cafe-Don-Bosco`) y deja que termine de importar las
-   dependencias de Maven (barra de progreso abajo a la derecha).
-4. **Crea la configuracion de ejecucion**:
-   - `Run > Edit Configurations… > + > Smart Tomcat`.
-   - **Tomcat Server**: `Configure…` y selecciona la carpeta donde
-     descomprimiste Tomcat en el paso 1.
-   - **Deployment directory**: selecciona el modulo web del proyecto
-     (IntelliJ suele detectarlo solo como `Cafe-Don-Bosco:war exploded`
-     o similar, gracias al empaquetado `war` del `pom.xml`).
-   - **Context path**: escribe `/` si quieres que el sitio quede en
-     `http://localhost:8080/` directo; dejalo con el nombre por
-     defecto (`/CafeDonBosco`) si prefieres esa ruta.
-   - Puerto: el que ya trae Tomcat por defecto, `8080` (cambialo aqui
-     si ya tienes algo mas corriendo en ese puerto).
-5. **Ejecuta** con el boton ▶ (Run) junto a esa configuracion. La
-   consola de IntelliJ mostrara el arranque de Tomcat; cuando diga
-   `Server startup in [...] ms`, ya esta listo.
+1. Descarga Apache Tomcat 10.1 (Core, en formato zip) desde
+   https://tomcat.apache.org/download-10.cgi y descomprimelo en una
+   carpeta cualquiera. Este proyecto necesita especificamente la
+   version 10.1 porque usa Jakarta EE 10 (el paquete `jakarta.servlet`
+   en vez del `javax.servlet` viejo de Tomcat 9 o anteriores).
+2. En IntelliJ, ve a `File > Settings > Plugins`, busca en el
+   Marketplace **Smart Tomcat**, instalalo y reinicia el IDE.
+3. Abre este proyecto en IntelliJ (`File > Open` y selecciona la
+   carpeta) y espera a que termine de descargar las dependencias de
+   Maven.
+4. Crea una configuracion de ejecucion nueva: `Run > Edit
+   Configurations… > + > Smart Tomcat`.
+   - En **Tomcat Server**, dale a `Configure…` y selecciona la carpeta
+     donde descomprimiste Tomcat en el paso 1.
+   - En **Deployment directory**, deja el modulo web del proyecto que
+     IntelliJ detecta solo.
+   - En **Context path** puedes escribir `/` para que el sitio quede
+     directo en `http://localhost:8080/`, o dejarlo en blanco para que
+     use el nombre del proyecto.
+5. Presiona el boton de Run (▶) sobre esa configuracion. Cuando la
+   consola muestre que el servidor arranco, la aplicacion ya esta
+   corriendo.
 
-### 3. Abrir en el navegador (localhost)
+### Paso 3: entrar al sistema
 
-Con MySQL corriendo (XAMPP) y Tomcat corriendo (Smart Tomcat), abre:
+Con MySQL (XAMPP) y Tomcat (Smart Tomcat) corriendo al mismo tiempo,
+entra a `http://localhost:8080/` (o a la ruta que hayas puesto como
+context path). Ahi aparece la pantalla inicial con dos opciones: entrar
+como administrador o entrar como consumidor.
 
-- **`http://localhost:8080/`** (o `http://localhost:8080/CafeDonBosco/`
-  si dejaste el context path por defecto) — portal inicial con dos
-  botones: **Soy Administrador** (pide iniciar sesion) y **Soy
-  Consumidor** (entra directo al catalogo, sin cuenta).
-
-**Usuario administrador de prueba** (creado por `db/schema.sql`):
+Para probar el panel de administrador, este es el usuario que ya viene
+cargado por `db/schema.sql`:
 
 ```
 Correo:      admin@cafedonbosco.com
 Contrasena:  Admin123!
 ```
 
-Cambia esa contrasena (o genera un nuevo hash con
-`PasswordUtil.hashear(...)`) antes de usar el sistema fuera de un
-entorno de pruebas — nunca la dejes tal cual en produccion.
+(Esta contrasena es solo para pruebas locales; en un entorno real
+habria que cambiarla.)
 
-**Si algo no carga:** confirma que el modulo MySQL de XAMPP sigue
-"verde"/corriendo (se detiene solo si la maquina se reinicia) y que la
-consola de Smart Tomcat no muestre un error de conexion a la base de
-datos (`No suitable driver found` o `Communications link failure` casi
-siempre significa que MySQL esta apagado o los datos de `DB_URL` no
-coinciden con tu XAMPP).
+Si la pagina no carga o marca un error de conexion a la base de datos,
+lo primero que reviso es que el modulo MySQL de XAMPP siga encendido:
+se apaga solo si reinicias la computadora o cierras XAMPP.
 
 ---
 
-## Arquitectura
+## Como esta organizado el codigo
+
+El proyecto sigue el patron **MVC** de forma bastante literal, dividido
+en capas para que cada clase tenga una sola responsabilidad:
 
 ```
-controller (Servlets JSON, /api/...)        -> service -> dao -> MySQL
-controller.vista.* (Servlets + forward JSP) -> service -> dao -> MySQL
+Servlet (controller)  ->  Service (reglas de negocio)  ->  DAO (JDBC)  ->  MySQL
+                                                       \->  JSP (vista)
 ```
 
-- **model**: entidades del dominio (`Usuario`, `Categoria`, `Producto`,
-  `Inventario`, `Venta`, `DetalleVenta`, `Compra`, `DetalleCompra`,
-  `Proveedor`, `GrupoOpcion`, `Opcion`, `Carrito`, `CarritoItem`, etc.).
-- **dto.request / dto.response**: objetos de entrada/salida que nunca
-  exponen las entidades directamente (la contrasena, por ejemplo, jamas
-  viaja en una respuesta).
-- **dao / dao.impl**: acceso a datos con JDBC puro y `PreparedStatement`
-  (sin ORM).
-- **service / service.impl**: todas las reglas de negocio y las
-  validaciones — precio, stock, permisos, transiciones de estado —
-  viven aqui, nunca en el Servlet ni en la JSP.
-- **controller**: Servlets anotados con `@WebServlet` que exponen la API
-  JSON bajo `/api/...`.
-- **controller.vista.admin** / **controller.vista.tienda**: Servlets que
-  hacen `forward()` a las JSP del panel de administrador y de la tienda,
-  respectivamente.
-- **filter**: `CorsFilter`, `RolAdminFilter` (protege `/api/admin/*`),
-  `SesionVistaFilter` (protege `/admin/*`), `GlobalExceptionFilter`.
-- **scheduler**: `VentaSchedulerListener`, un hilo en segundo plano que
-  cada 30 segundos revisa los pedidos `EN_PREPARACION` cuyo tiempo
-  estimado ya se cumplio y los pasa automaticamente a `LISTO`.
-- **util**: `ConexionBD`, `PasswordUtil` (BCrypt), `JsonUtil` (Gson),
-  `ValidacionUtil`, `SessionUtil`, `LoginRateLimiter`, `WhatsAppUtil`,
-  `TicketPdfGenerator` (Apache PDFBox), `Constantes`.
-- **exception**: `AppException` y subclases especificas, cada una
-  mapeada a un codigo HTTP y un mensaje seguro para el cliente.
+- **`model`**: las clases que representan las cosas del negocio
+  (`Producto`, `Venta`, `Carrito`, `Usuario`, etc.).
+- **`dto`**: en vez de mandar las entidades directo al cliente, se usan
+  DTOs de entrada (`request`) y salida (`response`); asi, por ejemplo,
+  la contrasena del usuario nunca puede terminar viajando por accidente
+  en una respuesta JSON.
+- **`dao`**: aqui vive todo el SQL, escrito a mano con
+  `PreparedStatement` (sin ningun ORM de por medio).
+- **`service`**: la capa mas importante para mi: aqui van todas las
+  validaciones y las reglas de negocio (que el precio se calcule
+  siempre del lado del servidor, que no se pueda vender mas stock del
+  que hay, etc.), separadas de como se guardan los datos y de como se
+  reciben las peticiones.
+- **`controller`**: los Servlets que exponen la API en formato JSON
+  bajo `/api/...`.
+- **`controller.vista.admin`** y **`controller.vista.tienda`**: otro
+  grupo de Servlets, que en vez de responder JSON arman la pagina y la
+  mandan a una vista JSP con `RequestDispatcher.forward()`.
+- **`filter`**: los filtros de seguridad (quien puede entrar a
+  `/admin/*` o a `/api/admin/*`) y el manejo global de errores.
+- **`scheduler`**: un hilo en segundo plano que cada 30 segundos revisa
+  si algun pedido ya deberia estar listo (segun el tiempo de
+  preparacion) y lo actualiza solo, sin que el administrador tenga que
+  hacerlo a mano.
+- **`util`**: utilidades compartidas como el manejo de la conexion a
+  MySQL, el cifrado de contrasenas, la lectura/escritura de JSON, las
+  validaciones comunes, etc.
+- **`exception`**: excepciones propias para cada tipo de error de
+  negocio, de forma que el cliente siempre reciba un mensaje claro y
+  nunca un error crudo de Java.
 
-### Modelo de venta unificado
+### Por que una sola tabla de ventas
 
-En vez de duplicar `Venta` y `Pedido`, se usa una sola entidad `Venta`
-con `TipoVenta` (`PRESENCIAL` o `WEB`). La venta de mostrador (POS del
-administrador) y la compra del consumidor comparten exactamente la
-misma transaccion (`VentaServiceImpl.registrarConTransaccion`), el mismo
-descuento de inventario y el mismo ciclo de estados
-(`RECIBIDO → EN_PREPARACION → LISTO → ENTREGADO`, o `CANCELADO` en
-cualquier punto antes de `ENTREGADO`).
+Al principio pense en tener una tabla separada para "pedidos web" y
+otra para "ventas de mostrador", pero eso hubiera significado
+duplicar toda la logica de descontar inventario y de calcular totales
+en dos lugares distintos. En vez de eso, hay una sola entidad `Venta`
+con un campo `tipoVenta` (`PRESENCIAL` o `WEB`): las dos comparten
+exactamente el mismo metodo para registrarse
+(`VentaServiceImpl.registrarConTransaccion`), el mismo descuento de
+stock y el mismo ciclo de estados
+(`RECIBIDO -> EN_PREPARACION -> LISTO -> ENTREGADO`, o `CANCELADO` en
+cualquier momento antes de entregarse).
 
 ### Personalizacion de productos
 
-Un producto puede tener uno o mas **grupos de opciones** (`grupo_opcion`
-/ `opcion` / `producto_grupo_opcion`), cada uno de seleccion unica u
-obligatorio o no (por ejemplo "Tamano" es unico y obligatorio; "Extras"
-es multiple y opcional). El precio se recalcula en vivo en el navegador
-mientras el cliente elige, pero **el servidor vuelve a resolver y
-recalcular todo contra la base de datos** al agregar al carrito y de
-nuevo al confirmar el checkout: nunca se confia en el precio que manda
-el navegador. Dos configuraciones distintas del mismo producto (ej.
-Cafe Latte pequeno vs. Cafe Latte grande) quedan como lineas separadas
-en el carrito, no se fusionan.
+Un producto puede tener uno o varios grupos de opciones (por ejemplo,
+un cafe tiene "Tamano", "Tipo de leche" y "Nivel de azucar"). Cada
+grupo puede ser de una sola opcion o de varias, y puede ser obligatorio
+o no. Mientras el cliente elige, el precio se recalcula al instante en
+el navegador para que vea el total antes de agregar al carrito, pero
+esa parte es solo visual: cuando el producto realmente se agrega al
+carrito, y otra vez cuando se confirma la compra, el servidor vuelve a
+buscar cada opcion en la base de datos y recalcula el precio el mismo,
+sin confiar en ningun numero que haya mandado el navegador. Esto evita
+que alguien manipule el precio desde las herramientas de desarrollador
+del navegador.
 
-### Carrito por AJAX
+Tambien me encargue de que dos configuraciones distintas del mismo
+producto (un cafe pequeno y ese mismo cafe grande, por ejemplo) queden
+como dos lineas separadas en el carrito en vez de mezclarse en una
+sola.
 
-Agregar un producto al carrito usa `fetch` contra `/api/carrito` en vez
-de recargar la pagina: el contador del carrito en el encabezado se
-actualiza al instante y se muestra un mensaje de confirmacion o de
-error segun lo que responda el servidor. Si la red falla, cae de vuelta
-a un envio de formulario normal para no dejar al cliente sin poder
-comprar.
+### El carrito sin recargar la pagina
 
----
-
-## Rutas de la tienda (`/tienda/*`, publico — sin cuenta)
-
-| Ruta | Descripcion |
-| --- | --- |
-| `/tienda` | Home: destacados y categorias |
-| `/tienda/menu` | Catalogo completo (busqueda en vivo, filtro por categoria, orden) |
-| `/tienda/producto?id={id}` | Detalle con personalizacion, precio en vivo y productos relacionados |
-| `/tienda/carrito` | Carrito de sesion (agregar/quitar/vaciar, por linea) |
-| `/tienda/checkout` | Datos de envio + metodo de pago; registra la venta WEB |
-| `/tienda/confirmacion?token={token}` | Confirmacion inmediata tras la compra |
-| `/tienda/ticket?token={token}` | Comprobante: imprimir, descargar PDF, compartir por WhatsApp |
-| `/tienda/nosotros` | Pagina institucional |
-
-El consumidor **nunca inicia sesion** para comprar: el carrito y el
-checkout funcionan enteramente sobre la sesion HTTP como invitado. Si
-decide registrarse (`POST /api/auth/registro`) puede despues consultar
-`/api/mis-pedidos` y `/api/mi-cuenta`, pero eso es opcional.
-
-## Panel del administrador (`/admin/*`, protegido)
-
-| Ruta | Descripcion |
-| --- | --- |
-| `/login`, `/logout` | Inicio/cierre de sesion, exclusivo para rol `ADMINISTRADOR` |
-| `/admin/dashboard` | KPIs del dia/mes, ventas recientes, stock bajo, accesos rapidos |
-| `/admin/productos` | Catalogo administrativo con stock exacto (solo lectura; crear/editar se hace por la API, ver mas abajo) |
-| `/admin/venta-nueva` | POS: arma una venta presencial y la registra |
-| `/admin/historial-ventas` | Historial combinado de ventas presenciales y web |
-| `/admin/ticket?id={id}` | Comprobante de cualquier venta, por id |
-
-Sin sesion con rol `ADMINISTRADOR`, `SesionVistaFilter` redirige
-cualquier ruta bajo `/admin/*` a `/login`.
-
-**Gestionable solo por API, sin pantalla propia todavia:** crear/editar
-productos y categorias, ajustar inventario, proveedores, compras y los
-grupos de opciones de personalizacion. La logica y la seguridad ya
-estan completas (ver la tabla de endpoints); falta construir la vista
-JSP para cada una.
+Agregar un producto al carrito se hace con `fetch` (AJAX) contra
+`/api/carrito`, no con un formulario que recarga toda la pagina: el
+numero del carrito en la parte de arriba se actualiza al instante y
+aparece un mensaje confirmando que se agrego (o explicando el error,
+si algo fallo, por ejemplo que ya no queda stock). Si por algun motivo
+la peticion por red falla, el formulario cae de vuelta a un envio
+normal para que el cliente igual pueda completar la compra.
 
 ---
 
-## Endpoints de la API
+## Rutas de la tienda
 
-Todas las respuestas usan el mismo sobre:
+| Ruta | Que hace |
+| --- | --- |
+| `/tienda` | Pagina de inicio con productos destacados |
+| `/tienda/menu` | Catalogo completo, con busqueda y filtro por categoria |
+| `/tienda/producto?id={id}` | Ficha del producto con sus opciones de personalizacion |
+| `/tienda/carrito` | Ver y editar el carrito de la sesion actual |
+| `/tienda/checkout` | Datos de entrega y metodo de pago |
+| `/tienda/confirmacion?token={token}` | Pantalla de confirmacion tras pagar |
+| `/tienda/ticket?token={token}` | El comprobante: se puede imprimir, descargar en PDF o compartir por WhatsApp |
+| `/tienda/nosotros` | Informacion sobre la cafeteria |
+
+El consumidor nunca necesita iniciar sesion para comprar: el carrito
+vive en su sesion de navegador como invitado. Si quiere, puede
+registrarse (`/api/auth/registro`) para despues consultar su historial
+de pedidos, pero es completamente opcional.
+
+## Panel de administracion
+
+| Ruta | Que hace |
+| --- | --- |
+| `/login` | Inicio de sesion del administrador |
+| `/admin/dashboard` | Resumen del dia: ventas, productos con poco stock, accesos rapidos |
+| `/admin/productos` | Catalogo con el stock real de cada producto |
+| `/admin/venta-nueva` | Punto de venta para registrar una compra hecha en el mostrador |
+| `/admin/historial-ventas` | Historial de todas las ventas, web y presenciales |
+| `/admin/ticket?id={id}` | Comprobante de cualquier venta |
+
+Ninguna de estas paginas se puede abrir sin haber iniciado sesion como
+administrador: si se intenta, el sistema redirige automaticamente al
+login.
+
+Algunas tareas administrativas (crear o editar un producto, ajustar el
+inventario, dar de alta un proveedor o registrar una compra) todavia
+las hago a traves de la API directamente en vez de tener un formulario
+en el panel; la logica y las validaciones ya estan completas del lado
+del servidor, pero me falta construir esas pantallas.
+
+---
+
+## La API
+
+Todas las respuestas de la API siguen el mismo formato:
 
 ```json
 { "exitoso": true, "mensaje": "...", "datos": { } }
 ```
 
-### Publicos
+Rutas publicas (no necesitan sesion):
 
-| Metodo | Ruta | Descripcion |
+| Metodo | Ruta | Que hace |
 | --- | --- | --- |
-| POST | `/api/auth/login` | Login compartido admin/consumidor (bloquea 15 min tras 5 fallos seguidos) |
-| POST | `/api/auth/registro` | Registro de consumidor (opcional) |
-| GET | `/api/auth/sesion` | Usuario de la sesion actual |
-| POST | `/api/auth/logout` | Cierra la sesion |
-| GET | `/api/categorias` | Categorias activas |
-| GET | `/api/productos` | Catalogo (filtros `categoria`, `buscar`, `orden`) |
+| POST | `/api/auth/login` | Inicia sesion |
+| POST | `/api/auth/registro` | Crea una cuenta de consumidor (opcional) |
+| GET | `/api/categorias` | Lista las categorias |
+| GET | `/api/productos` | Lista el catalogo (se puede filtrar por categoria, texto y orden) |
 | GET | `/api/productos/{id}` | Detalle de un producto |
-| GET | `/api/productos/{id}/relacionados` | Productos de la misma categoria |
 | GET | `/api/productos/{id}/opciones` | Grupos de personalizacion de ese producto |
-| GET/POST/PUT/DELETE | `/api/carrito`, `/api/carrito/items[/{claveLinea}]` | Carrito de compras (por sesion) |
-| POST | `/api/checkout` | Registra la venta WEB, descuenta stock, revalida todo en el servidor |
-| GET | `/api/horario/estado` | Si el local esta abierto ahora mismo |
-| GET | `/api/tickets/{token}` | Datos del ticket por token aleatorio |
-| GET | `/api/tickets/{token}/pdf` | PDF real del ticket (Apache PDFBox) |
-| GET | `/api/tickets/{token}/whatsapp-link` | Enlace `wa.me` con el pedido ya redactado (no envia el mensaje solo) |
-| POST | `/api/tickets/{token}/enviar-email` | Envia el PDF del ticket por correo (requiere `SMTP_HOST` configurado; sin boton en la interfaz todavia) |
+| GET/POST/PUT/DELETE | `/api/carrito`, `/api/carrito/items/{clave}` | Manejo del carrito |
+| POST | `/api/checkout` | Confirma la compra |
+| GET | `/api/tickets/{token}` | Consulta un ticket por su codigo |
+| GET | `/api/tickets/{token}/pdf` | Descarga el ticket en PDF |
+| GET | `/api/tickets/{token}/whatsapp-link` | Genera un enlace de WhatsApp con el pedido ya redactado |
 
-### Con sesion propia (consumidor registrado)
+Rutas que requieren sesion de administrador (verificadas por
+`RolAdminFilter`):
 
-| Metodo | Ruta | Descripcion |
+| Metodo | Ruta | Que hace |
 | --- | --- | --- |
-| GET | `/api/mi-cuenta` | Perfil del usuario autenticado |
-| PUT | `/api/mi-cuenta` | Editar nombre/apellido/correo |
-| GET | `/api/mis-pedidos`, `/api/mis-pedidos/{id}` | Historial de pedidos propio (ownership verificado en el servidor) |
-
-### Administrador (`RolAdminFilter`, requiere rol `ADMINISTRADOR`)
-
-| Metodo | Ruta | Descripcion |
-| --- | --- | --- |
-| GET/POST | `/api/admin/categorias` | Listar/crear categorias |
-| PUT | `/api/admin/categorias/{id}` | Editar categoria |
-| GET/POST | `/api/admin/productos` | Listar/crear productos (con stock exacto) |
-| PUT | `/api/admin/productos/{id}` | Editar producto |
-| PUT | `/api/admin/productos/{id}/estado` | Activar/desactivar producto |
-| GET | `/api/admin/inventario` | Inventario con stock exacto |
-| PUT | `/api/admin/inventario` | Ajustar stock/stock minimo (exige un motivo real) |
-| GET/POST | `/api/admin/ventas` | Historial / registrar venta presencial (POS) |
-| PATCH | `/api/admin/ventas/{id}` | Cambiar estado de una venta |
-| GET | `/api/admin/tickets/{id}` | Ticket de cualquier venta por id |
-| GET/POST | `/api/admin/compras` | Historial / registrar compra a proveedor |
-| GET/POST/PUT | `/api/admin/proveedores[/{id}]` | Gestion de proveedores |
-| GET/POST/PUT/DELETE | `/api/admin/grupos-opcion[/{id}]` | Gestion de grupos y opciones de personalizacion |
-| GET/PUT | `/api/admin/horario[/{dia}]` | Horario de atencion por dia |
-| GET | `/api/admin/dashboard` | KPIs, ventas recientes, stock bajo |
+| GET/POST/PUT | `/api/admin/productos` | Ver, crear y editar productos |
+| GET/PUT | `/api/admin/inventario` | Ver y ajustar el stock |
+| GET/POST | `/api/admin/ventas` | Historial y registro de ventas presenciales |
+| PATCH | `/api/admin/ventas/{id}` | Cambiar el estado de un pedido |
+| GET/POST | `/api/admin/compras` | Registrar compras a proveedores |
+| GET/POST/PUT | `/api/admin/proveedores` | Gestion de proveedores |
+| GET | `/api/admin/dashboard` | Estadisticas para el panel principal |
 
 ---
 
-## Seguridad implementada
+## Seguridad
 
-- Contrasenas con BCrypt (`jbcrypt`, costo 12), nunca se devuelven en
-  ninguna respuesta; limitadas a 6-72 caracteres (BCrypt trunca mas
-  alla de 72 bytes).
-- `LoginRateLimiter` bloquea un correo 15 minutos tras 5 intentos de
-  login fallidos seguidos (en memoria, por instancia de servidor).
-- `PreparedStatement` en todo el acceso a datos.
-- El precio, el stock y las opciones de personalizacion se revalidan
-  en el servidor en cada paso (agregar al carrito, checkout); nunca se
-  confia en lo que envia el navegador.
-- El descuento de stock usa `UPDATE ... WHERE cantidad >= ?` dentro de
-  una transaccion JDBC, para evitar sobreventa con solicitudes
-  concurrentes.
-- Rutas administrativas que tambien existen en version publica
-  (`/api/productos` vs `/api/admin/productos`) verifican el prefijo de
-  la URL **y** la sesion, no solo el filtro — para que una escritura
-  nunca dependa de un unico punto de proteccion.
-- `/api/mis-pedidos` y `/api/mi-cuenta` verifican que el recurso
-  pedido pertenezca al usuario autenticado, no solo que haya sesion.
-- El ticket del consumidor se consulta por un token aleatorio, nunca
-  por el id incremental de la venta.
-- Toda entrada de usuario que se vuelve a mostrar en una JSP pasa por
-  `fn:escapeXml` (proteccion contra XSS).
-- `RolAdminFilter` protege `/api/admin/*`; `SesionVistaFilter` protege
-  las pantallas `/admin/*`.
+Algunas decisiones que tome pensando en que esto pudiera usarse de
+verdad y no solo para la demo:
 
-## Nota tecnica: registro del driver JDBC en Tomcat
+- Las contrasenas se guardan cifradas con BCrypt, nunca en texto
+  plano, y nunca se incluyen en ninguna respuesta de la API.
+- Despues de 5 intentos fallidos de inicio de sesion seguidos con el
+  mismo correo, el sistema bloquea ese correo por 15 minutos, para
+  dificultar que alguien intente adivinar una contrasena a la fuerza.
+- El precio y el stock de cada producto siempre se vuelven a revisar
+  en el servidor antes de agregar algo al carrito y antes de confirmar
+  la compra, sin importar que datos haya mandado el navegador.
+- El descuento del inventario se hace con una condicion en la misma
+  consulta SQL (`UPDATE ... WHERE cantidad >= ?`) para que, si dos
+  personas compran el ultimo producto casi al mismo tiempo, no se
+  pueda vender mas de lo que realmente hay.
+- Un consumidor solo puede ver su propio historial de pedidos y su
+  propia cuenta; el sistema siempre compara el pedido contra el
+  usuario que inicio sesion, no solo contra si hay o no una sesion
+  activa.
+- El ticket de una compra se busca por un codigo aleatorio, no por el
+  numero consecutivo de la venta, para que nadie pueda ver el ticket de
+  otra persona con solo cambiar un numero en la URL.
+- Todo el texto que un usuario escribe y que despues se vuelve a
+  mostrar en una pagina (su nombre, sus notas del pedido) se escapa
+  antes de mostrarlo, para evitar que alguien intente inyectar codigo
+  a traves de esos campos.
 
-`ConexionBD` carga explicitamente `com.mysql.cj.jdbc.Driver` con
-`Class.forName(...)` en un bloque estatico. En un classpath plano el
-driver se auto-registra via `ServiceLoader`, pero dentro de un servlet
-container el JAR vive en `WEB-INF/lib` bajo el classloader propio de la
-aplicacion, y ese registro automatico no siempre se dispara: sin este
-`Class.forName`, `DriverManager.getConnection()` falla con
-`No suitable driver found` al desplegar en un Tomcat real (el error no
-aparece en `mvn compile`/`package`, que no ejecutan el codigo).
+## Un detalle que aprendi al desplegar en Tomcat
+
+La clase `ConexionBD` carga el driver de MySQL a mano con
+`Class.forName("com.mysql.cj.jdbc.Driver")`. En un programa Java normal
+esto no hace falta porque el driver se auto-registra, pero dentro de
+Tomcat el JAR del driver vive en el classloader propio de la
+aplicacion, y ese auto-registro no siempre se dispara. Sin esta linea,
+la aplicacion compila y pasa las pruebas sin ningun problema, pero al
+desplegarla en un Tomcat real falla con `No suitable driver found` en
+cuanto intenta hablar con la base de datos — un error que solo aparece
+en el servidor real, nunca en `mvn test`.
 
 ## Pruebas
 
@@ -336,14 +343,8 @@ aparece en `mvn compile`/`package`, que no ejecutan el codigo).
 mvn test
 ```
 
-83 pruebas unitarias (JUnit 5 + Mockito) sobre la capa de servicio y
-utilidades: validaciones, maquina de estados de venta, carrito
-(incluyendo lineas por personalizacion y limites de cantidad), login y
-el limitador de intentos fallidos, horario de atencion.
-
-## Variables de entorno
-
-Ver `.env.example` para la lista completa (base de datos, SMTP para el
-envio de tickets por correo, nivel de logging). Ninguna es obligatoria
-para correr en local con XAMPP: todas tienen un valor por defecto
-pensado para desarrollo.
+El proyecto tiene 83 pruebas unitarias con JUnit 5 y Mockito, sobre
+todo para la capa de servicios: validaciones de datos, el carrito
+(incluyendo que dos personalizaciones del mismo producto no se
+mezclen), el bloqueo de intentos fallidos de login, la maquina de
+estados de una venta y el horario de atencion.
