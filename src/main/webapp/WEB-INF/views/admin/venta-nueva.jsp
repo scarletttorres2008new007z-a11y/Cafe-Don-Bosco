@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-venta-nueva.css">
 </head>
-<body>
+<body data-context-path="${pageContext.request.contextPath}">
 <div class="app">
     <%@ include file="_sidebar.jspf" %>
 
@@ -102,7 +102,15 @@
                         <div class="cart">
                             <c:forEach var="item" items="${carrito.items}">
                                 <div class="cart-row">
-                                    <div class="cart-name">${fn:escapeXml(item.nombreProducto)}<small>${item.precioUnitarioFormateado} c/u</small></div>
+                                    <div class="cart-name">
+                                        ${fn:escapeXml(item.nombreProducto)}
+                                        <c:if test="${not empty item.opciones}">
+                                            <small class="cart-opciones">
+                                                <c:forEach var="opcion" items="${item.opciones}" varStatus="est">${fn:escapeXml(opcion.nombreOpcion)}<c:if test="${not est.last}">, </c:if></c:forEach>
+                                            </small>
+                                        </c:if>
+                                        <small>${item.precioUnitarioConOpcionesFormateado} c/u</small>
+                                    </div>
                                     <div class="qty">
                                         <form method="post" action="${pageContext.request.contextPath}/admin/venta-nueva">
                                             <input type="hidden" name="accion" value="decrementar">
@@ -111,8 +119,8 @@
                                         </form>
                                         <span>${item.cantidad}</span>
                                         <form method="post" action="${pageContext.request.contextPath}/admin/venta-nueva">
-                                            <input type="hidden" name="accion" value="agregar">
-                                            <input type="hidden" name="productoId" value="${item.productoId}">
+                                            <input type="hidden" name="accion" value="incrementar">
+                                            <input type="hidden" name="claveLinea" value="${item.claveLinea}">
                                             <button type="submit">+</button>
                                         </form>
                                     </div>
@@ -175,6 +183,16 @@
                 <div class="modal-confirmacion-acciones">
                     <button type="button" class="boton-admin secundario" id="botonCerrarCancelar">Volver</button>
                     <button type="button" class="boton-admin peligro" id="botonConfirmarCancelar">Si, cancelar</button>
+                </div>
+            </dialog>
+
+            <dialog id="modalPersonalizarProducto" class="modal-confirmacion modal-personalizar">
+                <h3 id="tituloPersonalizar">Personalizar producto</h3>
+                <div id="cuerpoPersonalizar"></div>
+                <p id="errorPersonalizar" class="error-personalizar" hidden>Debes elegir una opcion en cada grupo obligatorio.</p>
+                <div class="modal-confirmacion-acciones">
+                    <button type="button" class="boton-admin secundario" id="botonCancelarPersonalizar">Volver</button>
+                    <button type="button" class="boton-admin" id="botonConfirmarPersonalizar">Agregar</button>
                 </div>
             </dialog>
         </div>

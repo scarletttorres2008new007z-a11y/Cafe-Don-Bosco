@@ -14,6 +14,7 @@ import sv.udb.cafedonbosco.exception.AppException;
 import sv.udb.cafedonbosco.exception.ValidacionException;
 import sv.udb.cafedonbosco.model.Carrito;
 import sv.udb.cafedonbosco.model.CarritoItem;
+import sv.udb.cafedonbosco.model.OpcionSeleccionada;
 import sv.udb.cafedonbosco.service.CarritoService;
 import sv.udb.cafedonbosco.service.CategoriaService;
 import sv.udb.cafedonbosco.service.ProductoService;
@@ -63,7 +64,14 @@ public class VentaNuevaViewServlet extends HttpServlet {
             switch (accion == null ? "" : accion) {
                 case "agregar" -> {
                     int productoId = Integer.parseInt(request.getParameter("productoId"));
-                    carritoService.agregarProducto(carritoAdmin, productoId, 1);
+                    carritoService.agregarProducto(carritoAdmin, productoId, 1, obtenerOpcionIds(request));
+                }
+                case "incrementar" -> {
+                    String claveLinea = request.getParameter("claveLinea");
+                    CarritoItem actual = carritoAdmin.getItems().get(claveLinea);
+                    if (actual != null) {
+                        carritoService.actualizarCantidad(carritoAdmin, claveLinea, actual.getCantidad() + 1);
+                    }
                 }
                 case "decrementar" -> {
                     String claveLinea = request.getParameter("claveLinea");
@@ -102,6 +110,11 @@ public class VentaNuevaViewServlet extends HttpServlet {
             CarritoItemRequestDTO dto = new CarritoItemRequestDTO();
             dto.setProductoId(item.getProductoId());
             dto.setCantidad(item.getCantidad());
+            List<Integer> opcionIds = new ArrayList<>();
+            for (OpcionSeleccionada opcion : item.getOpciones()) {
+                opcionIds.add(opcion.getOpcionId());
+            }
+            dto.setOpcionIds(opcionIds);
             items.add(dto);
         }
 
@@ -112,6 +125,18 @@ public class VentaNuevaViewServlet extends HttpServlet {
         VentaResponseDTO venta = ventaService.registrarVentaPresencial(solicitud, administrador.getId());
         carritoService.vaciar(carritoAdmin);
         return venta.getId();
+    }
+
+    private List<Integer> obtenerOpcionIds(HttpServletRequest request) {
+        String[] valores = request.getParameterValues("opcionIds");
+        if (valores == null || valores.length == 0) {
+            return null;
+        }
+        List<Integer> opcionIds = new ArrayList<>();
+        for (String valor : valores) {
+            opcionIds.add(Integer.parseInt(valor));
+        }
+        return opcionIds;
     }
 
     private void mostrarFormulario(HttpServletRequest request, HttpServletResponse response, String error)
