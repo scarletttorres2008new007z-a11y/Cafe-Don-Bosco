@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /tienda/carrito
+Disallow: /tienda/checkout
+Disallow: /tienda/confirmacion
+Disallow: /tienda/ticket
+Disallow: /login
+
+Sitemap: https://cafe-don-bosco-production.up.railway.app/sitemap.xml

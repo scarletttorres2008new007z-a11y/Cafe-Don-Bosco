@@ -6,7 +6,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cafe Don Bosco</title>
+    <meta name="description" content="Pide en linea en Cafe Don Bosco: cafe, bebidas, postres y comida, con personalizacion de tamanos y extras, para recoger en tienda.">
+    <title>Cafe Don Bosco - Pide en linea</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/variables.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/base.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/tienda.css">
